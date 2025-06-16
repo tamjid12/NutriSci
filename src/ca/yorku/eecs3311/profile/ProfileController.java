@@ -1,19 +1,22 @@
 package ca.yorku.eecs3311.profile;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class ProfileController {
-    private List<UserProfile> profiles = new ArrayList<>();
+    private ProfileDAO dao = new ProfileDAO();
 
-    // Simulates saving the profile
+    /**
+     * Save the given profile to the database.
+     * @return true if saved successfully, false otherwise
+     */
     public boolean saveProfile(UserProfile profile) {
-        profiles.add(profile);
-        return true; // Always "success" for D1
+        return dao.save(profile);
     }
 
-    // To get saved profiles (optional)
+    /**
+     * Retrieve all saved profiles from the database.
+     */
     public List<UserProfile> getProfiles() {
-        return profiles;
+        return dao.findAll();
     }
 }

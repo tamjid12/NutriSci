@@ -1,58 +1,114 @@
 package ca.yorku.eecs3311.profile;
 
 import java.util.Scanner;
+import java.util.List;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 
 public class ProfileUI {
     private ProfileController controller = new ProfileController();
 
+    /**
+     * Prompts the user for all profile fields, creates a UserProfile,
+     * and saves it via the controller/DAO.
+     */
     public void clickCreateProfile() {
         Scanner scanner = new Scanner(System.in);
 
+        // 1) Name
         System.out.print("Enter your name: ");
-        String name = scanner.nextLine();
+        String name = scanner.nextLine().trim();
 
-        // Validate sex input
+        // 2) Sex
         String sex;
         while (true) {
             System.out.print("Enter your sex (Male/Female): ");
             sex = scanner.nextLine().trim();
             if (sex.equalsIgnoreCase("male") || sex.equalsIgnoreCase("female")) {
-                sex = sex.substring(0, 1).toUpperCase() + sex.substring(1).toLowerCase();
+                sex = sex.substring(0,1).toUpperCase() + sex.substring(1).toLowerCase();
                 break;
-            } else {
-                System.out.println("Invalid input. Please enter 'Male' or 'Female'.");
             }
+            System.out.println("Invalid input. Please enter 'Male' or 'Female'.");
         }
 
-        // Validate age input
-        int age = 0;
+        // 3) Date of Birth
+        LocalDate dob;
         while (true) {
-            System.out.print("Enter your age: ");
-            String ageStr = scanner.nextLine();
+            System.out.print("Enter your date of birth (YYYY-MM-DD): ");
+            String dobStr = scanner.nextLine().trim();
             try {
-                age = Integer.parseInt(ageStr.trim());
-                if (age > 0 && age < 150) { // reasonable bounds
-                    break;
-                } else {
-                    System.out.println("Please enter a valid positive age (1-149).");
-                }
-            } catch (NumberFormatException e) {
-                System.out.println("Invalid input. Please enter a numeric value for age.");
+                dob = LocalDate.parse(dobStr);
+                break;
+            } catch (DateTimeParseException e) {
+                System.out.println("Invalid format. Use YYYY-MM-DD.");
             }
         }
 
-        UserProfile profile = UserProfileFactory.createUserProfile(name, sex, age);
-        boolean success = controller.saveProfile(profile);
+        // 4) Height
+        double height;
+        while (true) {
+            System.out.print("Enter your height: ");
+            String h = scanner.nextLine().trim();
+            try {
+                height = Double.parseDouble(h);
+                break;
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid number. Try again.");
+            }
+        }
 
+        // 5) Weight
+        double weight;
+        while (true) {
+            System.out.print("Enter your weight: ");
+            String w = scanner.nextLine().trim();
+            try {
+                weight = Double.parseDouble(w);
+                break;
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid number. Try again.");
+            }
+        }
+
+        // 6) Units
+        UnitSystem units;
+        while (true) {
+            System.out.print("Enter units (Metric/Imperial): ");
+            String u = scanner.nextLine().trim();
+            if (u.equalsIgnoreCase("metric")) {
+                units = UnitSystem.METRIC;
+                break;
+            } else if (u.equalsIgnoreCase("imperial")) {
+                units = UnitSystem.IMPERIAL;
+                break;
+            }
+            System.out.println("Invalid. Please enter 'Metric' or 'Imperial'.");
+        }
+
+        // Create & save
+        UserProfile profile = UserProfileFactory.createUserProfile(
+                name, sex, dob, height, weight, units
+        );
+        boolean success = controller.saveProfile(profile);
         if (success) {
             displaySuccessMessage();
+        } else {
+            System.out.println("Failed to save profile.");
         }
     }
 
+    /**
+     * Retrieves all saved profiles and prints them.
+     */
     public void showAllProfiles() {
-        System.out.println("All saved profiles:");
-        for (UserProfile profile : controller.getProfiles()) {
-            System.out.println(profile.getName() + " | " + profile.getSex() + " | " + profile.getAge());
+        System.out.println("\nAll saved profiles:");
+        List<UserProfile> list = controller.getProfiles();
+        if (list.isEmpty()) {
+            System.out.println("  (no profiles found)");
+        }
+        for (UserProfile p : list) {
+            // Relies on your UserProfile.toString()
+            System.out.println("  " + p);
         }
     }
 
