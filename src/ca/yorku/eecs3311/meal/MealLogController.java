@@ -1,15 +1,19 @@
+// src/ca/yorku/eecs3311/meal/MealLogController.java
 package ca.yorku.eecs3311.meal;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public class MealLogController {
-    private MealLogDAO dao = new MealLogDAO();
+    private MealEntryDAO dao = new MealEntryDAO();
 
-    public boolean saveMeal(MealLog m) {
-        return dao.save(m);
+    /** Save a full MealEntry (with items) */
+    public boolean saveMeal(MealEntry entry) {
+        return dao.save(entry);
     }
 
-    public List<MealLog> getMealsForUser(String profileName) {
-        return dao.findByProfile(profileName);
+    /** Get all MealEntries for a user on a given date */
+    public List<MealEntry> getMealsForUserOnDate(String profile, LocalDate date) {
+        return dao.findByProfileAndDate(profile, date);
     }
 }

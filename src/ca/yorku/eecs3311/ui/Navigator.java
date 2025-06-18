@@ -8,4 +8,5 @@ public interface Navigator {
     void showCreateProfile();
     void showSelectProfile();
     void showMealLog(String profileName);
+    void showJournal();
 }
