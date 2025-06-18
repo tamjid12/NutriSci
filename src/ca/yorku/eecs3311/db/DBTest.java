@@ -1,5 +1,7 @@
 package ca.yorku.eecs3311.db;
-
+/**
+ This is for testing connection to DB
+ */
 import java.sql.*;
 
 public class DBTest {
