@@ -141,6 +141,7 @@ public class MealEntryPanel extends JPanel {
 
         saveBtn.addActionListener(e -> {
             try {
+                // 1) Read date/time
                 Date d = (Date) dateSpinner.getValue();
                 LocalDate date = d.toInstant()
                         .atZone(ZoneId.systemDefault())
@@ -150,8 +151,27 @@ public class MealEntryPanel extends JPanel {
                         .atZone(ZoneId.systemDefault())
                         .toLocalTime()
                         .withSecond(0).withNano(0);
+
+                // 2) Meal type
                 MealType type = (MealType) mealTypeBox.getSelectedItem();
 
+                // 3) Validate one-per-date for non-snacks
+                if (type != MealType.SNACK) {
+                    List<MealEntry> existing =
+                            controller.getMealsForUserOnDate(profileName, date);
+                    boolean already = existing.stream()
+                            .anyMatch(me -> me.getMealType() == type);
+                    if (already) {
+                        statusLbl.setText(
+                                "You have already entered "
+                                        + type.name().toLowerCase()
+                                        + " for " + date
+                        );
+                        return;
+                    }
+                }
+
+                // 4) Build entry & items
                 MealEntry entry = new MealEntry(profileName, type, date, time);
                 List<MealItem> items = collectItems();
                 if (items.isEmpty()) {
@@ -160,6 +180,7 @@ public class MealEntryPanel extends JPanel {
                 }
                 entry.setItems(items);
 
+                // 5) Persist
                 boolean ok = controller.saveMeal(entry);
                 statusLbl.setText(ok ? "Entry saved!" : "Save failed");
             } catch (Exception ex) {

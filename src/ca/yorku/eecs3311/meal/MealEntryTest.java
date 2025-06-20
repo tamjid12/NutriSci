@@ -2,35 +2,103 @@ package ca.yorku.eecs3311.meal;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
 public class MealEntryTest {
     public static void main(String[] args) {
-        String profile = "TestUser";              // make sure this profile exists in your DB
-        MealType type  = MealType.BREAKFAST;
-        LocalDate date = LocalDate.now();
-        LocalTime time = LocalTime.of(8, 30);
+        Scanner scanner = new Scanner(System.in);
 
-        // 1) Create a new entry with two items
+        // 1. Read profile name
+        System.out.print("Enter profile name: ");
+        String profile = scanner.nextLine().trim();
+
+        // 2. Read meal type (case-insensitive)
+        MealType type = null;
+        while (type == null) {
+            System.out.print("Enter meal type (breakfast, lunch, dinner, snack): ");
+            String input = scanner.nextLine().trim().toUpperCase();
+            try {
+                type = MealType.valueOf(input);
+            } catch (IllegalArgumentException e) {
+                System.out.println("Invalid type. Please enter breakfast, lunch, dinner, or snack.");
+            }
+        }
+
+        // 3. Read date in ISO format
+        LocalDate date = null;
+        while (date == null) {
+            System.out.print("Enter date (YYYY-MM-DD): ");
+            String input = scanner.nextLine().trim();
+            try {
+                date = LocalDate.parse(input);
+            } catch (Exception e) {
+                System.out.println("Invalid format. Please use YYYY-MM-DD (e.g. 2025-06-19).");
+            }
+        }
+
+        // 4. Read time in 24-hour format
+        LocalTime time = null;
+        while (time == null) {
+            System.out.print("Enter time (24-hour HH:MM): ");
+            String input = scanner.nextLine().trim();
+            try {
+                time = LocalTime.parse(input);
+            } catch (Exception e) {
+                System.out.println("Invalid format. Please use HH:MM in 24-hour format (e.g. 08:30).");
+            }
+        }
+
+        // 5. Read ingredients
+        List<MealItem> items = new ArrayList<>();
+        while (true) {
+            System.out.print("Enter food name (blank to finish entry): ");
+            String food = scanner.nextLine().trim();
+            if (food.isEmpty()) break;
+            System.out.print("Enter quantity in grams: ");
+            double qty = Double.parseDouble(scanner.nextLine().trim());
+            items.add(new MealItem(0, food, qty));
+        }
+        if (items.isEmpty()) {
+            System.out.println("No ingredients entered. Exiting.");
+            return;
+        }
+
+        // 6. Build entry
         MealEntry entry = new MealEntry(profile, type, date, time);
-        entry.setItems(List.of(
-                new MealItem(0, "Eggs", 2.0),
-                new MealItem(0, "Bread", 1.0)
-        ));
+        entry.setItems(items);
 
-        // 2) Save it
         MealLogController ctrl = new MealLogController();
-        boolean saved = ctrl.saveMeal(entry);
-        System.out.println("Saved? " + saved);
 
-        // 3) Load today's entries for this profile
-        List<MealEntry> entries = ctrl.getMealsForUserOnDate(profile, date);
+        // 7. Validate one-per-date for non-snacks
+        if (type != MealType.SNACK) {
+            List<MealEntry> existing = ctrl.getMealsForUserOnDate(profile, date);
+            boolean already = false;
+            for (MealEntry me : existing) {
+                if (me.getMealType() == type) {
+                    already = true;
+                    break;
+                }
+            }
+            if (already) {
+                System.out.println(type.name().toLowerCase()
+                        + " already entered for " + date + ".");
+                return;
+            }
+        }
+
+        // 8. Attempt to save
+        boolean saved = ctrl.saveMeal(entry);
+        System.out.println("Save result: " + saved);
+
+        // 9. List all entries back
         System.out.println("Entries for " + profile + " on " + date + ":");
+        List<MealEntry> entries = ctrl.getMealsForUserOnDate(profile, date);
         for (MealEntry e : entries) {
             System.out.println("  " + e);
-            // and list each item:
-            for (MealItem item : e.getItems()) {
-                System.out.println("    - " + item);
+            for (MealItem it : e.getItems()) {
+                System.out.println("    - " + it);
             }
         }
     }
