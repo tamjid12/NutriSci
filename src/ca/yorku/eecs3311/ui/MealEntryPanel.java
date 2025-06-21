@@ -7,40 +7,84 @@ import ca.yorku.eecs3311.meal.MealType;
 import ca.yorku.eecs3311.nutrient.NutrientCalculator;
 import ca.yorku.eecs3311.nutrient.NutrientInfo;
 
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.data.category.DefaultCategoryDataset;
+
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
-import java.util.*;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Map;
+import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Swing panel for logging meals: lets user pick date, time, meal type,
+ * enter ingredients, preview nutrients (including Vitamins C, D, B-6, B-12)
+ * with a before-vs-after daily calorie chart, and save to the database.
+ */
 public class MealEntryPanel extends JPanel {
     private final String profileName;
     private final Navigator nav;
     private final MealLogController controller = new MealLogController();
-    private final NutrientCalculator calc = new NutrientCalculator();
+    private final NutrientCalculator calc       = new NutrientCalculator();
 
-    private final JSpinner dateSpinner;
-    private final JSpinner timeSpinner;
+    private JSpinner dateSpinner;
+    private JSpinner timeSpinner;
     private final JComboBox<MealType> mealTypeBox = new JComboBox<>(MealType.values());
     private final JPanel itemsPanel   = new JPanel();
-    private final JPanel nutrientPanel = new JPanel(new BorderLayout());
+    private final JPanel nutrientPanel = new JPanel(new BorderLayout(5,5));
     private final JLabel statusLbl    = new JLabel(" ");
 
     public MealEntryPanel(Navigator nav, String profileName) {
         this.nav = nav;
         this.profileName = profileName;
+
         setLayout(new BorderLayout(10,10));
+        setBorder(new EmptyBorder(10,10,10,10));
+        setBackground(Color.WHITE);
 
-        // --- Header ---
-        JLabel header = new JLabel("Log a meal for: " + profileName);
-        header.setFont(header.getFont().deriveFont(Font.BOLD, 16f));
-        add(header, BorderLayout.NORTH);
+        // Title
+        JPanel titlePanel = new JPanel(new BorderLayout());
+        titlePanel.setOpaque(false);
+        JLabel title    = new JLabel("Meal Logger", SwingConstants.CENTER);
+        title.setFont(title.getFont().deriveFont(24f).deriveFont(Font.BOLD));
+        JLabel subtitle = new JLabel("Log a meal for: " + profileName, SwingConstants.CENTER);
+        subtitle.setFont(subtitle.getFont().deriveFont(16f));
+        titlePanel.add(title,    BorderLayout.NORTH);
+        titlePanel.add(subtitle, BorderLayout.SOUTH);
+        add(titlePanel, BorderLayout.NORTH);
 
-        // --- Center form ---
+        // Form (west)
+        add(buildFormPanel(), BorderLayout.WEST);
+
+        // Nutrient info (east)
+        nutrientPanel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(Color.LIGHT_GRAY),
+                "Nutrient Info"
+        ));
+        nutrientPanel.setPreferredSize(new Dimension(320,300));
+        nutrientPanel.setBackground(Color.WHITE);
+        add(nutrientPanel, BorderLayout.EAST);
+
+        // Buttons + status (south)
+        add(buildButtonPanel(), BorderLayout.SOUTH);
+
+        // seed first ingredient row
+        addIngredientRow();
+    }
+
+    private JPanel buildFormPanel() {
         JPanel form = new JPanel(new GridBagLayout());
+        form.setOpaque(false);
+        form.setBorder(new EmptyBorder(0,0,10,0));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(4,4,4,4);
         gbc.anchor = GridBagConstraints.WEST;
@@ -66,166 +110,224 @@ public class MealEntryPanel extends JPanel {
         gbc.gridy=++y; gbc.gridx=0; form.add(new JLabel("Meal Type:"), gbc);
         gbc.gridx=1;           form.add(mealTypeBox, gbc);
 
-        // Ingredients label (note grams)
+        // Ingredients label
         gbc.gridy=++y; gbc.gridx=0; gbc.gridwidth=2;
         form.add(new JLabel("Ingredients (Qty in grams):"), gbc);
 
-        // Items panel in scroll pane
+        // Items panel
         itemsPanel.setLayout(new BoxLayout(itemsPanel, BoxLayout.Y_AXIS));
+        itemsPanel.setBackground(Color.WHITE);
         JScrollPane scroll = new JScrollPane(itemsPanel);
-        scroll.setPreferredSize(new Dimension(350,150));
+        scroll.setPreferredSize(new Dimension(350,140));
+        scroll.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
         gbc.gridy=++y; form.add(scroll, gbc);
 
-        // Add‐ingredient button
-        JButton addItemBtn = new JButton("Add Ingredient");
-        gbc.gridy=++y; form.add(addItemBtn, gbc);
+        // Add ingredient button
+        JButton addBtn = makeButton("Add Ingredient");
+        gbc.gridy=++y; gbc.gridwidth=2;
+        form.add(addBtn, gbc);
+        addBtn.addActionListener(e -> addIngredientRow());
 
-        add(form, BorderLayout.CENTER);
+        return form;
+    }
 
-        // --- Nutrient info panel (right) ---
-        nutrientPanel.setBorder(BorderFactory.createTitledBorder("Nutrient Info"));
-        nutrientPanel.setPreferredSize(new Dimension(300,150));
-        add(nutrientPanel, BorderLayout.EAST);
+    private JPanel buildButtonPanel() {
+        JButton showNutBtn = makeButton("Show Nutrients");
+        JButton saveBtn    = makeButton("Save Entry");
+        JButton backBtn    = makeButton("Back");
 
-        // --- Bottom controls ---
-        JButton showNutBtn = new JButton("Show Nutrients");
-        JButton saveBtn    = new JButton("Save Entry");
-        JButton backBtn    = new JButton("Back");
+        showNutBtn.addActionListener(e -> showNutrients());
+        saveBtn   .addActionListener(e -> saveEntry());
+        backBtn   .addActionListener(e -> nav.showSelectProfile());
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
-        buttonPanel.add(showNutBtn);
-        buttonPanel.add(saveBtn);
-        buttonPanel.add(backBtn);
+        JPanel btns = new JPanel(new FlowLayout(FlowLayout.CENTER,10,0));
+        btns.setOpaque(false);
+        btns.add(showNutBtn);
+        btns.add(saveBtn);
+        btns.add(backBtn);
+
+        statusLbl.setFont(statusLbl.getFont().deriveFont(Font.BOLD,14f));
+        statusLbl.setBorder(new EmptyBorder(8,8,8,8));
+        statusLbl.setForeground(new Color(0,120,0));
 
         JPanel south = new JPanel(new BorderLayout());
-        south.add(buttonPanel, BorderLayout.NORTH);
-        south.add(statusLbl,    BorderLayout.SOUTH);
-        add(south, BorderLayout.SOUTH);
+        south.setOpaque(false);
+        south.add(btns,      BorderLayout.NORTH);
+        south.add(statusLbl, BorderLayout.SOUTH);
+        return south;
+    }
 
-        // --- Listeners ---
-        addItemBtn.addActionListener(e -> addIngredientRow());
+    private JButton makeButton(String text) {
+        JButton b = new JButton(text);
+        b.setFocusPainted(false);
+        b.setBackground(new Color(70,130,180));
+        b.setForeground(Color.WHITE);
+        b.setBorder(new EmptyBorder(6,12,6,12));
+        b.setFont(b.getFont().deriveFont(13f));
+        return b;
+    }
 
-        showNutBtn.addActionListener(e -> {
-            try {
-                List<MealItem> items = collectItems();
-                if (items.isEmpty()) {
-                    statusLbl.setText("Add at least one ingredient");
+    private void showNutrients() {
+        try {
+            List<MealItem> items = collectItems();
+            if (items.isEmpty()) {
+                statusLbl.setText("Add at least one ingredient");
+                return;
+            }
+
+            Map<String,NutrientInfo> all = calc.calcForItemsWithUnits(items);
+
+            // only show C, D, B6, B12 (plus the four basics)
+            List<String> BASIC = List.of(
+                    "KCAL","PROT","FAT","CARB",
+                    "VITC","D-IU","B6","B12"
+            );
+            DefaultTableModel dm = new DefaultTableModel(
+                    new Object[]{"Nutrient","Amount","Unit"}, 0
+            );
+            for (String sym : BASIC) {
+                NutrientInfo info = all.get(sym);
+                double amt  = (info == null ? 0 : info.getAmount());
+                String unit = (info == null ? "" : info.getUnit());
+                dm.addRow(new Object[]{
+                        displayName(sym),
+                        String.format("%.2f", amt),
+                        unit
+                });
+            }
+            JTable nutTable = new JTable(dm);
+            JScrollPane tableScroll = new JScrollPane(nutTable);
+            tableScroll.setPreferredSize(new Dimension(280,160));
+
+            // calculate before/after calories
+            LocalDate date = getSelectedDate();
+            double before = 0;
+            for (MealEntry me : controller.getMealsForUserOnDate(profileName, date)) {
+                NutrientInfo kc = calc.calcForEntryWithUnits(me.getId()).get("KCAL");
+                before += (kc == null ? 0 : kc.getAmount());
+            }
+            double added = all.getOrDefault("KCAL", new NutrientInfo("KCAL",0,"")).getAmount();
+            double after = before + added;
+
+            DefaultCategoryDataset ds = new DefaultCategoryDataset();
+            ds.addValue(before, "Calories", "Before Entry");
+            ds.addValue(after,  "Calories", "After Entry");
+            JFreeChart chart = ChartFactory.createBarChart(
+                    "Calories Intake Today","", "kCal", ds
+            );
+            ChartPanel chartPanel = new ChartPanel(chart);
+            chartPanel.setPreferredSize(new Dimension(280,120));
+
+            JSplitPane split = new JSplitPane(
+                    JSplitPane.VERTICAL_SPLIT,
+                    tableScroll, chartPanel
+            );
+            split.setResizeWeight(0.33);
+            split.setBorder(null);
+
+            nutrientPanel.removeAll();
+            nutrientPanel.add(split, BorderLayout.CENTER);
+            nutrientPanel.revalidate();
+            nutrientPanel.repaint();
+
+            statusLbl.setText("Nutrients + calorie chart displayed");
+        } catch (Exception ex) {
+            statusLbl.setText("Error: " + ex.getMessage());
+            ex.printStackTrace();
+        }
+    }
+
+    private void saveEntry() {
+        try {
+            Date d = (Date) dateSpinner.getValue();
+            LocalDate date = d.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+            Date t = (Date) timeSpinner.getValue();
+            LocalTime time = t.toInstant().atZone(ZoneId.systemDefault())
+                    .toLocalTime().withSecond(0).withNano(0);
+
+            MealType type = (MealType) mealTypeBox.getSelectedItem();
+            if (type != MealType.SNACK) {
+                boolean dup = controller.getMealsForUserOnDate(profileName, date)
+                        .stream().anyMatch(me -> me.getMealType() == type);
+                if (dup) {
+                    statusLbl.setText(type.name().toLowerCase()
+                            + " already entered for " + date);
                     return;
                 }
-                Map<String,NutrientInfo> all = calc.calcForItemsWithUnits(items);
-                List<String> BASIC = List.of("KCAL","PROT","FAT","CARB");
-
-                DefaultTableModel dm = new DefaultTableModel(
-                        new Object[]{"Nutrient","Amount","Unit"}, 0
-                );
-                for (String sym : BASIC) {
-                    NutrientInfo info = all.get(sym);
-                    double amt  = info==null ? 0.0 : info.getAmount();
-                    String unit = info==null ? ""   : info.getUnit();
-                    dm.addRow(new Object[]{
-                            sym,
-                            String.format("%.2f", amt),
-                            unit
-                    });
-                }
-                JTable nutTable = new JTable(dm);
-                nutrientPanel.removeAll();
-                nutrientPanel.add(new JScrollPane(nutTable), BorderLayout.CENTER);
-                nutrientPanel.revalidate();
-                statusLbl.setText("Basic nutrients displayed");
-            } catch (Exception ex) {
-                statusLbl.setText("Error: " + ex.getMessage());
-                ex.printStackTrace();
             }
-        });
 
-        saveBtn.addActionListener(e -> {
-            try {
-                // 1) Read date/time
-                Date d = (Date) dateSpinner.getValue();
-                LocalDate date = d.toInstant()
-                        .atZone(ZoneId.systemDefault())
-                        .toLocalDate();
-                Date t = (Date) timeSpinner.getValue();
-                LocalTime time = t.toInstant()
-                        .atZone(ZoneId.systemDefault())
-                        .toLocalTime()
-                        .withSecond(0).withNano(0);
-
-                // 2) Meal type
-                MealType type = (MealType) mealTypeBox.getSelectedItem();
-
-                // 3) Validate one-per-date for non-snacks
-                if (type != MealType.SNACK) {
-                    List<MealEntry> existing =
-                            controller.getMealsForUserOnDate(profileName, date);
-                    boolean already = existing.stream()
-                            .anyMatch(me -> me.getMealType() == type);
-                    if (already) {
-                        statusLbl.setText(
-                                "You have already entered "
-                                        + type.name().toLowerCase()
-                                        + " for " + date
-                        );
-                        return;
-                    }
-                }
-
-                // 4) Build entry & items
-                MealEntry entry = new MealEntry(profileName, type, date, time);
-                List<MealItem> items = collectItems();
-                if (items.isEmpty()) {
-                    statusLbl.setText("Add at least one ingredient");
-                    return;
-                }
-                entry.setItems(items);
-
-                // 5) Persist
-                boolean ok = controller.saveMeal(entry);
-                statusLbl.setText(ok ? "Entry saved!" : "Save failed");
-            } catch (Exception ex) {
-                statusLbl.setText("Error: " + ex.getMessage());
-                ex.printStackTrace();
+            MealEntry entry = new MealEntry(profileName, type, date, time);
+            List<MealItem> items = collectItems();
+            if (items.isEmpty()) {
+                statusLbl.setText("Add at least one ingredient");
+                return;
             }
-        });
+            entry.setItems(items);
+            boolean ok = controller.saveMeal(entry);
+            statusLbl.setText(ok ? "Entry saved!" : "Save failed");
+        } catch (Exception ex) {
+            statusLbl.setText("Error: " + ex.getMessage());
+            ex.printStackTrace();
+        }
+    }
 
-        backBtn.addActionListener(e -> nav.showSelectProfile());
+    private String displayName(String sym) {
+        return switch (sym) {
+            case "KCAL"   -> "Calories";
+            case "PROT"   -> "Protein";
+            case "FAT"    -> "Fat";
+            case "CARB"   -> "Carbohydrates";
+            case "VITC"   -> "Vitamin C";
+            case "D-IU"   -> "Vitamin D";
+            case "B6"     -> "Vitamin B-6";
+            case "B12"    -> "Vitamin B-12";
+            default       -> sym;
+        };
+    }
 
-        // seed initial row
-        addIngredientRow();
+    private LocalDate getSelectedDate() {
+        Date d = (Date) dateSpinner.getValue();
+        return d.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
 
     private void addIngredientRow() {
         JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT,5,0));
+        row.setOpaque(false);
+        row.setBorder(new EmptyBorder(2,0,2,0));  // tighter vertical gap
+
         JTextField foodField = new JTextField(12);
         JTextField qtyField  = new JTextField(5);
         qtyField.setToolTipText("Enter quantity in grams");
         JButton removeBtn   = new JButton("–");
+        removeBtn.setFocusPainted(false);
+        removeBtn.setFont(removeBtn.getFont().deriveFont(12f));
         removeBtn.addActionListener(e -> {
             itemsPanel.remove(row);
             itemsPanel.revalidate();
             itemsPanel.repaint();
         });
+
         row.add(new JLabel("Food:"));
         row.add(foodField);
         row.add(new JLabel("Qty (g):"));
         row.add(qtyField);
         row.add(removeBtn);
+
         itemsPanel.add(row);
         itemsPanel.revalidate();
     }
 
     private List<MealItem> collectItems() {
-        List<MealItem> items = new ArrayList<>();
+        List<MealItem> list = new ArrayList<>();
         for (Component c : itemsPanel.getComponents()) {
-            JPanel row = (JPanel)c;
+            if (!(c instanceof JPanel)) continue;
+            JPanel row = (JPanel) c;
             String food = ((JTextField)row.getComponent(1)).getText().trim();
             String qtyS = ((JTextField)row.getComponent(3)).getText().trim();
             if (!food.isEmpty() && !qtyS.isEmpty()) {
-                double qty = Double.parseDouble(qtyS);
-                items.add(new MealItem(0, food, qty));
+                list.add(new MealItem(0, food, Double.parseDouble(qtyS)));
             }
         }
-        return items;
+        return list;
     }
 }

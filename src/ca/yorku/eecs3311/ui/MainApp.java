@@ -2,19 +2,24 @@ package ca.yorku.eecs3311.ui;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MainApp implements Navigator {
-    private JFrame     frame;
-    private JPanel     cards;
+    private JFrame frame;
+    private JPanel cards;
     private CardLayout cl;
-    private String     currentProfile;
+    private String currentProfile;
+
+    // Keep track of panels by name so we can remove old ones
+    private final Map<String, JPanel> cardMap = new HashMap<>();
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new MainApp().initUI());
     }
 
     private void initUI() {
-        // Optional: switch to Nimbus look & feel
+        // Nimbus look & feel
         try {
             for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {
@@ -30,18 +35,22 @@ public class MainApp implements Navigator {
         cl    = new CardLayout();
         cards = new JPanel(cl);
 
-        // Initial screens
-        cards.add(new MainMenuPanel(this),         "MENU");
-        cards.add(new CreateProfilePanel(this),    "CREATE");
-        cards.add(new ProfileSelectionPanel(this), "SELECT");
-        // Note: MealEntryPanel and JournalPanel are added dynamically
+        // Static cards
+        MainMenuPanel menu = new MainMenuPanel(this);
+        cards.add(menu, "MENU");        cardMap.put("MENU", menu);
+
+        CreateProfilePanel create = new CreateProfilePanel(this);
+        cards.add(create, "CREATE");    cardMap.put("CREATE", create);
+
+        ProfileSelectionPanel select = new ProfileSelectionPanel(this);
+        cards.add(select, "SELECT");    cardMap.put("SELECT", select);
 
         frame.setContentPane(cards);
         frame.pack();
+        frame.setMinimumSize(new Dimension(800, 600));
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
-        frame.pack();
-        frame.setMinimumSize(new Dimension(800, 600));
+
         showMainMenu();
     }
 
@@ -57,25 +66,42 @@ public class MainApp implements Navigator {
 
     @Override
     public void showSelectProfile() {
-        // Recreate the selection panel to refresh the list
-        cards.add(new ProfileSelectionPanel(this), "SELECT");
+        // Remove old SELECT panel
+        JPanel old = cardMap.remove("SELECT");
+        if (old != null) cards.remove(old);
+
+        // Add fresh SELECT panel
+        ProfileSelectionPanel sel = new ProfileSelectionPanel(this);
+        cards.add(sel, "SELECT");
+        cardMap.put("SELECT", sel);
         cl.show(cards, "SELECT");
     }
 
     @Override
     public void showMealLog(String profileName) {
-        // Remember which profile is active
         this.currentProfile = profileName;
-        // Add the meal entry screen for this profile
-        cards.add(new MealEntryPanel(this, profileName), "MEAL");
+
+        // Remove old MEAL panel
+        JPanel old = cardMap.remove("MEAL");
+        if (old != null) cards.remove(old);
+
+        // Add fresh MEAL panel
+        MealEntryPanel meal = new MealEntryPanel(this, profileName);
+        cards.add(meal, "MEAL");
+        cardMap.put("MEAL", meal);
         cl.show(cards, "MEAL");
     }
 
     @Override
     public void showJournal() {
-        // Show the journal for the current profile
-        cards.add(new JournalPanel(this, currentProfile), "JOURNAL");
+        // Remove old JOURNAL panel
+        JPanel old = cardMap.remove("JOURNAL");
+        if (old != null) cards.remove(old);
+
+        // Add fresh JOURNAL panel
+        JournalPanel journal = new JournalPanel(this, currentProfile);
+        cards.add(journal, "JOURNAL");
+        cardMap.put("JOURNAL", journal);
         cl.show(cards, "JOURNAL");
     }
 }
-
