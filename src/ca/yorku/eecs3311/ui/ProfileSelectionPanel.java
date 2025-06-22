@@ -1,7 +1,6 @@
 /*
  * File: MainApp.java
  * Entry point for the NutriSci Tracker application.
- * Sets Nimbus Look & Feel and launches the initial profile panel.
  */
 package ca.yorku.eecs3311.ui;
 
