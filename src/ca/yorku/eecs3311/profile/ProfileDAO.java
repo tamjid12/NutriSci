@@ -5,29 +5,30 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Handles saving and loading UserProfile objects from the Profile table.
- */
 public class ProfileDAO {
-    private static final String URL      = "jdbc:mysql://localhost:3306/nutriscidb";
-    private static final String USER     = "root";
-    private static final String PASSWORD = "Tamjid01711!";
+    private static final String URL  = "jdbc:mysql://localhost:3306/nutriscidb";
+    private static final String USER = "root";
+    private static final String PASS = "Tamjid01711!";
 
-    /** Inserts a new profile row. */
+    private Connection getConn() throws SQLException {
+        return DriverManager.getConnection(URL, USER, PASS);
+    }
+
+    /** Insert a new profile. */
     public boolean save(UserProfile p) {
-        String sql = "INSERT INTO Profile "
-                + "(name, sex, dob, height, weight, units) "
-                + "VALUES (?, ?, ?, ?, ?, ?)";
-        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
+        String sql = """
+            INSERT INTO Profile
+              (name, sex, dob, height, weight, units)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """;
+        try (Connection c = getConn();
+             PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, p.getName());
             ps.setString(2, p.getSex());
-            ps.setDate  (3, Date.valueOf(p.getDob()));
+            ps.setDate(3, Date.valueOf(p.getDob()));
             ps.setDouble(4, p.getHeight());
             ps.setDouble(5, p.getWeight());
             ps.setString(6, p.getUnits().name());
-
             return ps.executeUpdate() == 1;
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -35,23 +36,20 @@ public class ProfileDAO {
         }
     }
 
-    /** Retrieves all profiles from the table. */
+    /** Fetch all profiles. */
     public List<UserProfile> findAll() {
         String sql = "SELECT name, sex, dob, height, weight, units FROM Profile";
         List<UserProfile> list = new ArrayList<>();
-
-        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
-             Statement st = conn.createStatement();
+        try (Connection c = getConn();
+             Statement st = c.createStatement();
              ResultSet rs = st.executeQuery(sql)) {
-
             while (rs.next()) {
-                String name       = rs.getString("name");
-                String sex        = rs.getString("sex");
-                LocalDate dob     = rs.getDate("dob").toLocalDate();
-                double height     = rs.getDouble("height");
-                double weight     = rs.getDouble("weight");
-                UnitSystem units  = UnitSystem.valueOf(rs.getString("units"));
-
+                String name   = rs.getString("name");
+                String sex    = rs.getString("sex");
+                LocalDate dob = rs.getDate("dob").toLocalDate();
+                double height = rs.getDouble("height");
+                double weight = rs.getDouble("weight");
+                UnitSystem units = UnitSystem.valueOf(rs.getString("units"));
                 list.add(new UserProfile(name, sex, dob, height, weight, units));
             }
         } catch (SQLException ex) {
@@ -60,16 +58,68 @@ public class ProfileDAO {
         return list;
     }
 
-    /** Quick standalone test – run this main to verify your DAO works. */
-    public static void main(String[] args) {
-        ProfileDAO dao = new ProfileDAO();
-        UserProfile test = UserProfileFactory.createUserProfile(
-                "TestUser", "Male",
-                LocalDate.of(2000,1,1),
-                1.75, 70.0,
-                UnitSystem.METRIC
-        );
-        System.out.println("Saved? " + dao.save(test));
-        dao.findAll().forEach(System.out::println);
+    /** Fetch one profile by name. */
+    public UserProfile findByName(String name) {
+        String sql = """
+            SELECT name, sex, dob, height, weight, units
+              FROM Profile
+             WHERE name = ?
+            """;
+        try (Connection c = getConn();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, name);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    String sex    = rs.getString("sex");
+                    LocalDate dob = rs.getDate("dob").toLocalDate();
+                    double height = rs.getDouble("height");
+                    double weight = rs.getDouble("weight");
+                    UnitSystem units = UnitSystem.valueOf(rs.getString("units"));
+                    return new UserProfile(name, sex, dob, height, weight, units);
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return null;
+    }
+
+    /** Update an existing profile. */
+    public boolean update(UserProfile p) {
+        String sql = """
+            UPDATE Profile
+               SET sex    = ?,
+                   dob    = ?,
+                   height = ?,
+                   weight = ?,
+                   units  = ?
+             WHERE name   = ?
+            """;
+        try (Connection c = getConn();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, p.getSex());
+            ps.setDate(2, Date.valueOf(p.getDob()));
+            ps.setDouble(3, p.getHeight());
+            ps.setDouble(4, p.getWeight());
+            ps.setString(5, p.getUnits().name());
+            ps.setString(6, p.getName());
+            return ps.executeUpdate() == 1;
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return false;
+        }
+    }
+
+    /** Delete a profile. */
+    public boolean delete(String name) {
+        String sql = "DELETE FROM Profile WHERE name = ?";
+        try (Connection c = getConn();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, name);
+            return ps.executeUpdate() == 1;
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return false;
+        }
     }
 }

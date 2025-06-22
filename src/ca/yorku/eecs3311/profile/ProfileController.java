@@ -3,20 +3,30 @@ package ca.yorku.eecs3311.profile;
 import java.util.List;
 
 public class ProfileController {
-    private ProfileDAO dao = new ProfileDAO();
+    private final ProfileDAO dao = new ProfileDAO();
 
-    /**
-     * Save the given profile to the database.
-     * @return true if saved successfully, false otherwise
-     */
-    public boolean saveProfile(UserProfile profile) {
-        return dao.save(profile);
+    /** Create a new profile. */
+    public boolean saveProfile(UserProfile p) {
+        return dao.save(p);
     }
 
-    /**
-     * Retrieve all saved profiles from the database.
-     */
+    /** List all profiles. */
     public List<UserProfile> getProfiles() {
         return dao.findAll();
+    }
+
+    /** Fetch one profile by name. */
+    public UserProfile findByName(String name) {
+        return dao.findByName(name);
+    }
+
+    /** Update an existing profile. */
+    public boolean updateProfile(UserProfile p) {
+        return dao.update(p);
+    }
+
+    /** Delete a profile (and its related data). */
+    public boolean deleteProfile(String name) {
+        return dao.delete(name);
     }
 }

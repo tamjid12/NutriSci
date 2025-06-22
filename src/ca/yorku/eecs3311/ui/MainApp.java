@@ -1,5 +1,7 @@
 package ca.yorku.eecs3311.ui;
 
+import ca.yorku.eecs3311.profile.UserProfile;
+
 import javax.swing.*;
 import java.awt.*;
 import java.util.HashMap;
@@ -11,7 +13,7 @@ public class MainApp implements Navigator {
     private CardLayout cl;
     private String currentProfile;
 
-    // Keep track of panels by name so we can remove old ones
+    // track panels by name so we can replace them
     private final Map<String, JPanel> cardMap = new HashMap<>();
 
     public static void main(String[] args) {
@@ -19,7 +21,7 @@ public class MainApp implements Navigator {
     }
 
     private void initUI() {
-        // Nimbus look & feel
+        // Nimbus L&F
         try {
             for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {
@@ -39,11 +41,12 @@ public class MainApp implements Navigator {
         MainMenuPanel menu = new MainMenuPanel(this);
         cards.add(menu, "MENU");        cardMap.put("MENU", menu);
 
-        CreateProfilePanel create = new CreateProfilePanel(this);
-        cards.add(create, "CREATE");    cardMap.put("CREATE", create);
+        // we’ll add empty CREATE here so key always exists
+        CreateProfilePanel create0 = new CreateProfilePanel(this);
+        cards.add(create0, "CREATE");  cardMap.put("CREATE", create0);
 
-        ProfileSelectionPanel select = new ProfileSelectionPanel(this);
-        cards.add(select, "SELECT");    cardMap.put("SELECT", select);
+        ProfileSelectionPanel select0 = new ProfileSelectionPanel(this);
+        cards.add(select0, "SELECT");  cardMap.put("SELECT", select0);
 
         frame.setContentPane(cards);
         frame.pack();
@@ -61,6 +64,27 @@ public class MainApp implements Navigator {
 
     @Override
     public void showCreateProfile() {
+        // Remove old CREATE panel
+        JPanel old = cardMap.remove("CREATE");
+        if (old != null) cards.remove(old);
+
+        // Add a fresh blank form
+        CreateProfilePanel cp = new CreateProfilePanel(this);
+        cards.add(cp, "CREATE");
+        cardMap.put("CREATE", cp);
+        cl.show(cards, "CREATE");
+    }
+
+    @Override
+    public void showCreateProfile(UserProfile toEdit) {
+        // Remove old CREATE panel
+        JPanel old = cardMap.remove("CREATE");
+        if (old != null) cards.remove(old);
+
+        // Add a fresh form pre‐filled for editing
+        CreateProfilePanel cp = new CreateProfilePanel(this, toEdit);
+        cards.add(cp, "CREATE");
+        cardMap.put("CREATE", cp);
         cl.show(cards, "CREATE");
     }
 
@@ -80,12 +104,9 @@ public class MainApp implements Navigator {
     @Override
     public void showMealLog(String profileName) {
         this.currentProfile = profileName;
-
-        // Remove old MEAL panel
         JPanel old = cardMap.remove("MEAL");
         if (old != null) cards.remove(old);
 
-        // Add fresh MEAL panel
         MealEntryPanel meal = new MealEntryPanel(this, profileName);
         cards.add(meal, "MEAL");
         cardMap.put("MEAL", meal);
@@ -94,11 +115,9 @@ public class MainApp implements Navigator {
 
     @Override
     public void showJournal() {
-        // Remove old JOURNAL panel
         JPanel old = cardMap.remove("JOURNAL");
         if (old != null) cards.remove(old);
 
-        // Add fresh JOURNAL panel
         JournalPanel journal = new JournalPanel(this, currentProfile);
         cards.add(journal, "JOURNAL");
         cardMap.put("JOURNAL", journal);
