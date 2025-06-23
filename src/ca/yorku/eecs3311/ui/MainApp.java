@@ -95,7 +95,7 @@ public class MainApp implements Navigator {
     }
 
    // @Override
-    /*public void showSelectProfile() {
+    public void showSelectProfile() {
         // Remove old SELECT panel
         JPanel old = cardMap.remove("SELECT");
         if (old != null) cards.remove(old);
@@ -105,7 +105,7 @@ public class MainApp implements Navigator {
         cards.add(sel, "SELECT");
         cardMap.put("SELECT", sel);
         cl.show(cards, "SELECT");
-    }*/
+    }
 
     // Opens the MealEntry panel for the selected profile.
     @Override
