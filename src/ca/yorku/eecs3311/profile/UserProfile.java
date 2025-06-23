@@ -1,6 +1,11 @@
 package ca.yorku.eecs3311.profile;
 
 import java.time.LocalDate;
+/**
+ * Represents a user profile.
+ * Stores personal information including name, sex, date of birth,
+ * physical measurements, and preferred unit system.
+ */
 
 public class UserProfile {
     private String     name;

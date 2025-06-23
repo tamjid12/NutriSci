@@ -13,8 +13,10 @@ import java.util.Calendar;
 import java.util.Date;
 
 /**
- * Panel for creating or editing a user profile.
- * In create mode, shows “Create Profile”; in edit mode, “Update Profile.”
+ * A Swing panel for creating or editing user profiles.
+ * In "create mode", this panel collects user input to create a new profile.
+ * In "edit mode", it loads an existing profile into editable fields.
+ * This panel handles profile input, validation, and saving logic via ProfileController.
  */
 public class CreateProfilePanel extends JPanel {
     private final Navigator nav;
@@ -33,12 +35,12 @@ public class CreateProfilePanel extends JPanel {
     private JButton backBtn;
     private JLabel statusLbl;
 
-    /** Create-mode constructor */
+    /** Constructor for creating a new profile. */
     public CreateProfilePanel(Navigator nav) {
         this(nav, null);
     }
 
-    /** Edit-mode constructor */
+    /** Constructor for editing an existing profile. */
     public CreateProfilePanel(Navigator nav, UserProfile toEdit) {
         this.nav = nav;
         this.original = toEdit;
@@ -48,7 +50,9 @@ public class CreateProfilePanel extends JPanel {
             populateFields(toEdit);
         }
     }
-
+    /**
+     * Initializes the UI layout and form fields.
+     */
     private void initUI() {
         setLayout(new GridBagLayout());
         setBorder(new EmptyBorder(10, 10, 10, 10));
@@ -149,7 +153,7 @@ public class CreateProfilePanel extends JPanel {
         });
     }
 
-    /** Pre-fill fields when editing an existing profile */
+    /**  Prefills the form fields with an existing user profile when in edit mode.*/
     private void populateFields(UserProfile p) {
         nameField.setText(p.getName());
         nameField.setEnabled(false);

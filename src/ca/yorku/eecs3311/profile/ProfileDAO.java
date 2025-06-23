@@ -5,6 +5,11 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Data Access Object (DAO) for handling CRUD operations related to user profiles.
+ * Provides methods to save, retrieve, update, and delete profiles from the database.
+ */
+
 public class ProfileDAO {
     private static final String URL  = "jdbc:mysql://localhost:3306/nutriscidb";
     private static final String USER = "root";

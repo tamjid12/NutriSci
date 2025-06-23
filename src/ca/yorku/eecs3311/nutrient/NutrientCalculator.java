@@ -17,8 +17,7 @@ public class NutrientCalculator {
     private static final String PASSWORD = "Tamjid01711!";
 
     /**
-     * Calculate nutrient totals for a saved meal entry (with entry_id).
-     * Returns symbol->(amount,unit).
+     * Calculate nutrient totals for a saved meal entry
      */
     public Map<String, NutrientInfo> calcForEntryWithUnits(int entryId) throws SQLException {
         String sql = """
@@ -50,8 +49,7 @@ public class NutrientCalculator {
     }
 
     /**
-     * Calculate nutrient totals on-the-fly from a list of MealItem
-     * (before saving any entry), returning symbol->(amount,unit).
+     * Calculate nutrient totals from a list of MealItem
      */
     public Map<String, NutrientInfo> calcForItemsWithUnits(List<MealItem> items) throws SQLException {
         String sql = """

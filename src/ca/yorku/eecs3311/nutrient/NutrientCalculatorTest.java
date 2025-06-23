@@ -6,15 +6,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
+/**
+ * A simple console-based test class for verifying nutrient calculations
+ * based on user-provided food input and quantity in grams.
+ *
+ * This test demonstrates how the NutrientCalculator can be used
+ * to compute calorie, protein, fat, and carbohydrate information for
+ * a given food item retrieved from the CNF database.
+ * The Nutrient Calculator in Java swing has more information, This is just a test on the console.
+ */
 public class NutrientCalculatorTest {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
 
-        // 1) Read food description from user
+        // 1. Read food description from user
         System.out.print("Enter food description (exact match): ");
         String food = scanner.nextLine().trim();
 
-        // 2) Read quantity in grams
+        // 2. Read quantity in grams
         System.out.print("Enter quantity in grams: ");
         double qty;
         try {
@@ -25,7 +34,7 @@ public class NutrientCalculatorTest {
             return;
         }
 
-        // 3) Build list and calculate
+        // 3. Build list and calculate
         List<MealItem> items = List.of(new MealItem(0, food, qty));
         NutrientCalculator calc = new NutrientCalculator();
         Map<String, NutrientInfo> nuts;
@@ -39,7 +48,7 @@ public class NutrientCalculatorTest {
             return;
         }
 
-        // 4) Display the four basic nutrients
+        // 4. Display four basic nutrients
         Map<String, String> displayNames = Map.of(
                 "KCAL", "Calories",
                 "PROT", "Protein",
@@ -47,7 +56,7 @@ public class NutrientCalculatorTest {
                 "CARB", "Carbohydrates"
         );
 
-        // 5) Summary
+        // 5) Output Summary
         System.out.printf("=== Nutrient totals for %.2f g of %s ===%n", qty, food);
         boolean allAvailable = true;
         for (var entry : displayNames.entrySet()) {

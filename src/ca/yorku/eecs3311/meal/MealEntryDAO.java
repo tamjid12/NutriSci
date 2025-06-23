@@ -7,6 +7,16 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Data Access Object (DAO) class for handling database operations
+ * related to meal entries and their associated food items.
+ *
+ * Provides methods to Save a MealEntry and its items in a transaction and Load meal entries for a given profile and date
+ *
+ * This class acts as an Adapter between the application and
+ * the underlying SQL database
+ */
+
 public class MealEntryDAO {
     private static final String URL      = "jdbc:mysql://localhost:3306/nutriscidb";
     private static final String USER     = "root";

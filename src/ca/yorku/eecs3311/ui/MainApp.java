@@ -7,6 +7,12 @@ import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * The main application class responsible for initializing the GUI and handling screen navigation.
+ * It uses a CardLayout to manage multiple panels and implements the Navigator interface
+ * to allow screen transitions from anywhere in the application.
+ */
+
 public class MainApp implements Navigator {
     private JFrame frame;
     private JPanel cards;
@@ -19,7 +25,7 @@ public class MainApp implements Navigator {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new MainApp().initUI());
     }
-
+    //Initializes the user interface: frame, layout, and initial panels.
     private void initUI() {
         // Nimbus L&F
         try {
@@ -56,12 +62,12 @@ public class MainApp implements Navigator {
 
         showMainMenu();
     }
-
+    //Main Menu panel
     @Override
     public void showMainMenu() {
         cl.show(cards, "MENU");
     }
-
+    // Opens a fresh CreateProfile panel for creating a new user
     @Override
     public void showCreateProfile() {
         // Remove old CREATE panel
@@ -81,15 +87,15 @@ public class MainApp implements Navigator {
         JPanel old = cardMap.remove("CREATE");
         if (old != null) cards.remove(old);
 
-        // Add a fresh form pre‐filled for editing
+        // Add fresh SELECT panel
         CreateProfilePanel cp = new CreateProfilePanel(this, toEdit);
         cards.add(cp, "CREATE");
         cardMap.put("CREATE", cp);
         cl.show(cards, "CREATE");
     }
 
-    @Override
-    public void showSelectProfile() {
+   // @Override
+    /*public void showSelectProfile() {
         // Remove old SELECT panel
         JPanel old = cardMap.remove("SELECT");
         if (old != null) cards.remove(old);
@@ -99,8 +105,9 @@ public class MainApp implements Navigator {
         cards.add(sel, "SELECT");
         cardMap.put("SELECT", sel);
         cl.show(cards, "SELECT");
-    }
+    }*/
 
+    // Opens the MealEntry panel for the selected profile.
     @Override
     public void showMealLog(String profileName) {
         this.currentProfile = profileName;
@@ -113,6 +120,7 @@ public class MainApp implements Navigator {
         cl.show(cards, "MEAL");
     }
 
+    // Opens the Journal panel for the current profile.
     @Override
     public void showJournal() {
         JPanel old = cardMap.remove("JOURNAL");
@@ -124,3 +132,4 @@ public class MainApp implements Navigator {
         cl.show(cards, "JOURNAL");
     }
 }
+

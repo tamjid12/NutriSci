@@ -1,6 +1,10 @@
-// src/ca/yorku/eecs3311/meal/MealItem.java
-package ca.yorku.eecs3311.meal;
 
+package ca.yorku.eecs3311.meal;
+/**
+ * Represents a single food item that is part of a MealEntry.
+ * Each MealItem has an associated quantity and belongs to a specific MealEntry.
+ * This class is used for both data storage and in-memory meal representation.
+ */
 public class MealItem {
     private int id;         // DB PK (0 before save)
     private int entryId;    // FK to MealEntry.id

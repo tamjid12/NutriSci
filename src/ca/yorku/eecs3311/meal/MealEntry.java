@@ -6,6 +6,13 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Represents a single meal entry made by a user.
+ * Each meal entry is linked to a specific profile and includes the type of meal,
+ * date and time of consumption, and a list of food items.
+ * This class is used both for in-memory manipulation and database interaction.
+ */
+
 public class MealEntry {
     private int id;                        // DB PK (0 before save)
     private String profileName;
@@ -22,7 +29,7 @@ public class MealEntry {
         this(0, profileName, mealType, date, time, new ArrayList<>());
     }
 
-    // Full constructor (for loading from DB)
+    // Full constructor for loading from DB
     public MealEntry(int id,
                      String profileName,
                      MealType mealType,
@@ -48,6 +55,7 @@ public class MealEntry {
         this.items = items;
     }
 
+    //Generates a string summary of the meal for display/logging.
     @Override
     public String toString() {
         return "[" + id + "] " + profileName

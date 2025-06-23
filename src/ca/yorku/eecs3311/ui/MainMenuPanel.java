@@ -5,24 +5,27 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 /**
- * The main menu panel shown at startup.
- * Provides "Create Profile", "Select Profile" buttons,
- * plus an "Exit App" button in the bottom‐right.
+ *  The main menu panel shown when the application starts.
+ *  Provides access to profile creation, profile selection, and app exit.
+ *  Uses a clean layout with modern styling for buttons and titles.
  */
 public class MainMenuPanel extends JPanel {
     private final Navigator nav;
-
+    // Constructs the main menu panel.
     public MainMenuPanel(Navigator nav) {
         this.nav = nav;
         initUI();
     }
-
+    /**
+     * Initializes the UI components for the main menu, including the title,
+     * subtitle, action buttons, and layout design.
+     */
     private void initUI() {
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);
         setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        // --- North: Title + Subtitle ---
+        // Title & Subtitle
         JLabel title = new JLabel("NutriSci Tracker", SwingConstants.CENTER);
         title.setFont(title.getFont().deriveFont(Font.BOLD, 28f));
         title.setForeground(new Color(30, 30, 30));
@@ -41,7 +44,7 @@ public class MainMenuPanel extends JPanel {
 
         add(header, BorderLayout.NORTH);
 
-        // --- Center: Create & Select buttons ---
+        // Create & Select buttons
         JButton btnCreate = makeMainButton("Create Profile");
         JButton btnSelect = makeMainButton("Select Profile");
 
@@ -55,7 +58,7 @@ public class MainMenuPanel extends JPanel {
 
         add(center, BorderLayout.CENTER);
 
-        // --- South: Exit button at bottom‐right ---
+        // Exit button at bottom
         JButton exitBtn = new JButton("Exit App");
         exitBtn.setFocusPainted(false);
         exitBtn.setBackground(new Color(200, 50, 50));
@@ -70,7 +73,7 @@ public class MainMenuPanel extends JPanel {
 
         add(south, BorderLayout.SOUTH);
     }
-
+    //Creates a standard main menu button
     private JButton makeMainButton(String text) {
         JButton b = new JButton(text);
         b.setPreferredSize(new Dimension(160, 80));

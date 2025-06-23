@@ -5,7 +5,14 @@ import org.jfree.chart.ChartFrame;
 import org.jfree.chart.JFreeChart;
 import org.jfree.data.category.DefaultCategoryDataset;
 
+/**
+ * A simple demonstration of using JFreeChart to display a bar chart of daily calorie intake.
+ * This class creates a dataset, builds a bar chart, and displays it in a frame.
+ * It sets up a dataset of calorie intake over three days,
+ * creates a bar chart using JFreeChart, and displays the chart in a new window.
+ */
 public class ChartDemo {
+
     public static void main(String[] args) {
         // 1) Create your dataset
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();

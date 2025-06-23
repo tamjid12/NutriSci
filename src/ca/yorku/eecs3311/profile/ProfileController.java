@@ -1,6 +1,10 @@
 package ca.yorku.eecs3311.profile;
 
 import java.util.List;
+/**
+ * Controller class responsible for managing user profiles.
+ * Acts as a bridge between the UI and the database layer (DAO).
+ */
 
 public class ProfileController {
     private final ProfileDAO dao = new ProfileDAO();

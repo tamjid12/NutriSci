@@ -5,6 +5,11 @@ import java.util.List;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 
+/**
+ * Command-line UI class for creating and displaying user profiles.
+ * Handles user input for fields such as name, sex, DOB, height, weight, and units.
+ * Delegates profile persistence to the ProfileController
+ */
 public class ProfileUI {
     private ProfileController controller = new ProfileController();
 

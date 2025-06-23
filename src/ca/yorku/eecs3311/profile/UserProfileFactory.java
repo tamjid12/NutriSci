@@ -13,6 +13,7 @@ public class UserProfileFactory {
      * @param weight  numeric weight (kg or lb)
      * @param units   UnitSystem.METRIC or UnitSystem.IMPERIAL
      * @return a fully-populated UserProfile
+     *
      */
     public static UserProfile createUserProfile(
             String name,

@@ -6,6 +6,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
+/**
+ * Console-based test class to manually input and validate a MealEntry.
+ * This class simulates the behavior of the Meal Logging UI for testing purposes
+ * without Swing. It allows a user to input a meal's profile name, meal type,
+ * date, time, and ingredient list, validates it, and saves it to the database.
+ */
+
 public class MealEntryTest {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
@@ -14,7 +21,7 @@ public class MealEntryTest {
         System.out.print("Enter profile name: ");
         String profile = scanner.nextLine().trim();
 
-        // 2. Read meal type (case-insensitive)
+        // 2. Read meal type
         MealType type = null;
         while (type == null) {
             System.out.print("Enter meal type (breakfast, lunch, dinner, snack): ");
@@ -26,7 +33,7 @@ public class MealEntryTest {
             }
         }
 
-        // 3. Read date in ISO format
+        // 3. Read date
         LocalDate date = null;
         while (date == null) {
             System.out.print("Enter date (YYYY-MM-DD): ");
@@ -38,7 +45,7 @@ public class MealEntryTest {
             }
         }
 
-        // 4. Read time in 24-hour format
+        // 4. Read time
         LocalTime time = null;
         while (time == null) {
             System.out.print("Enter time (24-hour HH:MM): ");
@@ -65,13 +72,13 @@ public class MealEntryTest {
             return;
         }
 
-        // 6. Build entry
+        // 6. Build Meal entry
         MealEntry entry = new MealEntry(profile, type, date, time);
         entry.setItems(items);
 
         MealLogController ctrl = new MealLogController();
 
-        // 7. Validate one-per-date for non-snacks
+        // 7. Validation for only one entry per meal per date
         if (type != MealType.SNACK) {
             List<MealEntry> existing = ctrl.getMealsForUserOnDate(profile, date);
             boolean already = false;
@@ -88,7 +95,7 @@ public class MealEntryTest {
             }
         }
 
-        // 8. Attempt to save
+        // 8. save
         boolean saved = ctrl.saveMeal(entry);
         System.out.println("Save result: " + saved);
 

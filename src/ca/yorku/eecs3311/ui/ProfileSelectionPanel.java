@@ -1,7 +1,3 @@
-/*
- * File: MainApp.java
- * Entry point for the NutriSci Tracker application.
- */
 package ca.yorku.eecs3311.ui;
 
 import ca.yorku.eecs3311.profile.ProfileController;
@@ -19,8 +15,10 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Panel for selecting, updating, and deleting user profiles.
- * Displays all profiles in a table with "Update" and "Delete" buttons per row.
+ * This Swing panel lists all user profiles in a table format and provides options
+ * to update, delete, or select a profile for meal logging. It uses the ProfileController
+ * to interact with the underlying profile data and integrates with the Navigator
+ * interface for panel transitions.
  */
 public class ProfileSelectionPanel extends JPanel {
     private final Navigator nav;
@@ -115,8 +113,7 @@ public class ProfileSelectionPanel extends JPanel {
         nav.showMealLog(name);
     }
 
-    // -------------------
-    // ButtonRenderer
+    //  Custom cell renderer for displaying buttons in the table.
     private static class ButtonRenderer extends JButton implements TableCellRenderer {
         public ButtonRenderer() {
             setOpaque(true);
@@ -130,7 +127,8 @@ public class ProfileSelectionPanel extends JPanel {
         }
     }
 
-    // ButtonEditor with a callback that receives the profile name
+    // Custom cell editor for handling button clicks in table cells.
+    // Accepts a callback that receives the profile name.
     private class ButtonEditor extends AbstractCellEditor
             implements TableCellEditor, ActionListener {
         private final JButton button = new JButton();

@@ -26,9 +26,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Swing panel for logging meals: lets user pick date, time, meal type,
- * enter ingredients, preview nutrients (including Vitamins C, D, B-6, B-12)
- * with a before-vs-after daily calorie chart, and save to the database.
+ * This panel allows the user to log a meal by selecting a date, time, and meal type,
+ * and entering food ingredients with quantity.
+ * It supports live nutrient preview (including calories, macros, and key vitamins)
+ * and a visual calorie bar chart (before and after entry).
+ * Users can save the entry to the database.
  */
 public class MealEntryPanel extends JPanel {
     private final String profileName;
@@ -62,10 +64,10 @@ public class MealEntryPanel extends JPanel {
         titlePanel.add(subtitle, BorderLayout.SOUTH);
         add(titlePanel, BorderLayout.NORTH);
 
-        // Form (west)
+        // Form
         add(buildFormPanel(), BorderLayout.WEST);
 
-        // Nutrient info (east)
+        // Nutrient info
         nutrientPanel.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(Color.LIGHT_GRAY),
                 "Nutrient Info"
@@ -74,7 +76,7 @@ public class MealEntryPanel extends JPanel {
         nutrientPanel.setBackground(Color.WHITE);
         add(nutrientPanel, BorderLayout.EAST);
 
-        // Buttons + status (south)
+        // Buttons & status
         add(buildButtonPanel(), BorderLayout.SOUTH);
 
         // seed first ingredient row
@@ -112,7 +114,7 @@ public class MealEntryPanel extends JPanel {
 
         // Ingredients label
         gbc.gridy=++y; gbc.gridx=0; gbc.gridwidth=2;
-        form.add(new JLabel("Ingredients (Qty in grams):"), gbc);
+        form.add(new JLabel("Ingredients:"), gbc);
 
         // Items panel
         itemsPanel.setLayout(new BoxLayout(itemsPanel, BoxLayout.Y_AXIS));
@@ -166,7 +168,7 @@ public class MealEntryPanel extends JPanel {
         b.setFont(b.getFont().deriveFont(13f));
         return b;
     }
-
+    //Reads and validates ingredients, then shows the nutrient table and calorie intake chart side by side.
     private void showNutrients() {
         try {
             List<MealItem> items = collectItems();
@@ -177,7 +179,7 @@ public class MealEntryPanel extends JPanel {
 
             Map<String,NutrientInfo> all = calc.calcForItemsWithUnits(items);
 
-            // only show C, D, B6, B12 (plus the four basics)
+            // Show Nutrients
             List<String> BASIC = List.of(
                     "KCAL","PROT","FAT","CARB",
                     "VITC","D-IU","B6","B12"
@@ -236,7 +238,7 @@ public class MealEntryPanel extends JPanel {
             ex.printStackTrace();
         }
     }
-
+    // Reads form data and saves a new meal entry after validation.
     private void saveEntry() {
         try {
             Date d = (Date) dateSpinner.getValue();
@@ -270,7 +272,7 @@ public class MealEntryPanel extends JPanel {
             ex.printStackTrace();
         }
     }
-
+    // Maps nutrient symbols to user friendly names
     private String displayName(String sym) {
         return switch (sym) {
             case "KCAL"   -> "Calories";
@@ -284,12 +286,12 @@ public class MealEntryPanel extends JPanel {
             default       -> sym;
         };
     }
-
+    // returns date
     private LocalDate getSelectedDate() {
         Date d = (Date) dateSpinner.getValue();
         return d.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
-
+    // Adds a new row in the ingredient entry list.
     private void addIngredientRow() {
         JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT,5,0));
         row.setOpaque(false);
@@ -309,14 +311,14 @@ public class MealEntryPanel extends JPanel {
 
         row.add(new JLabel("Food:"));
         row.add(foodField);
-        row.add(new JLabel("Qty (g):"));
+        row.add(new JLabel("Quantity:"));
         row.add(qtyField);
         row.add(removeBtn);
 
         itemsPanel.add(row);
         itemsPanel.revalidate();
     }
-
+    // Collects all entered ingredients and quantities into MealItem objects.
     private List<MealItem> collectItems() {
         List<MealItem> list = new ArrayList<>();
         for (Component c : itemsPanel.getComponents()) {

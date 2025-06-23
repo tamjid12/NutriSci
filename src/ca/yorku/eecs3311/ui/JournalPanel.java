@@ -14,6 +14,12 @@ import java.time.ZoneId;
 import java.util.*;
 import java.util.List;
 
+/**
+ * This panel shows a journal of all meals logged for a given profile on a selected date.
+ * It displays a table of meal types, times, and calorie totals.
+ * Clicking a row reveals a dialog with the full nutrient breakdown for that meal entry.
+ */
+
 public class JournalPanel extends JPanel {
     private final String profileName;
     private final Navigator nav;
@@ -29,7 +35,7 @@ public class JournalPanel extends JPanel {
         this.profileName = profileName;
         setLayout(new BorderLayout(10,10));
 
-        // Top: date picker + load/back
+        // date picker + load/back
         JPanel top = new JPanel();
         dateSpinner = new JSpinner(new SpinnerDateModel(new Date(), null, null, Calendar.DAY_OF_MONTH));
         dateSpinner.setEditor(new JSpinner.DateEditor(dateSpinner, "yyyy-MM-dd"));
@@ -41,12 +47,12 @@ public class JournalPanel extends JPanel {
         top.add(backBtn);
         add(top, BorderLayout.NORTH);
 
-        // Table: Type | Time | Calories
+        // Table
         model = new DefaultTableModel(new Object[]{"Type","Time","Calories","ID"}, 0) {
             @Override public boolean isCellEditable(int r,int c){return false;}
         };
         table = new JTable(model);
-        // hide the ID column from view:
+
         table.removeColumn(table.getColumnModel().getColumn(3));
         add(new JScrollPane(table), BorderLayout.CENTER);
 
@@ -83,6 +89,7 @@ public class JournalPanel extends JPanel {
         }
     }
 
+    // Displays a detailed nutrient breakdown in a popup for the given meal entry ID.
     private void showDetailDialog(int entryId) {
         try {
             Map<String,NutrientInfo> nuts = calc.calcForEntryWithUnits(entryId);
