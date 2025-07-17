@@ -1,26 +1,38 @@
+// FoodSwapTest.java
 package ca.yorku.eecs3311.foodswap;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-/**
- * Test class for demonstrating the functionality of the FoodSwap class.
- * This class creates a sample meal and applies a mock food swap strategy
- * to simulate how food substitutions might occur based on a user-defined goal.
- */
+import ca.yorku.eecs3311.meal.MealItem;
+
 public class FoodSwapTest {
-
-    // Main method to run a simple test of the {@code FoodSwap} class.
     public static void main(String[] args) {
-        // Example meal setup
-        Map<String, Double> ingredients = new HashMap<>();
-        ingredients.put("Egg", 100.0);
-        ingredients.put("Toast", 50.0);
+        // Sample current meal
+        List<MealItem> currentMeal = new ArrayList<>();
+        currentMeal.add(new MealItem(0, 0, "White Bread", 100.0));
+        currentMeal.add(new MealItem(0, 0, "Bacon", 50.0));
 
-        // Create the FoodSwap instance with the original meal
-        FoodSwap swap = new FoodSwap(ingredients);
+        // Convert List<MealItem> to Map<String, Double>
+        Map<String, Double> mealMap = new HashMap<>();
+        for (MealItem item : currentMeal) {
+            mealMap.put(item.getFoodName(), item.getQuantity());
+        }
 
-        // Apply the swap suggestion for the goal "reduce calories"
-        swap.suggestSwap("reduce calories");
+        // Initialize controller and test swap
+        FoodSwapController controller = new FoodSwapController(mealMap);
+        Map<String, Double> swapped = controller.suggestSwap("Reduce Calories", currentMeal);
+
+        System.out.println("Original Meal:");
+        for (MealItem item : currentMeal) {
+            System.out.println("- " + item.getFoodName() + " (g): " + item.getQuantity());
+        }
+
+        System.out.println("\nSuggested Swaps:");
+        for (Map.Entry<String, Double> entry : swapped.entrySet()) {
+            System.out.println("- " + entry.getKey() + " (g): " + entry.getValue());
+        }
     }
 }
