@@ -1,11 +1,18 @@
 package ca.yorku.eecs3311.ui;
 
-import ca.yorku.eecs3311.profile.UserProfile;
-
-import javax.swing.*;
-import java.awt.*;
+import java.awt.CardLayout;
+import java.awt.Dimension;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+
+import ca.yorku.eecs3311.meal.MealItem;
+import ca.yorku.eecs3311.profile.UserProfile;
 
 /**
  * The main application class responsible for initializing the GUI and handling screen navigation.
@@ -132,5 +139,14 @@ public class MainApp implements Navigator {
         cardMap.put("JOURNAL", journal);
         cl.show(cards, "JOURNAL");
     }
-}
+    public void showFoodSwapPanel(List<MealItem> currentMeal) {
+        JPanel old = cardMap.remove("FOODSWAP");
+        if (old != null) cards.remove(old);
 
+        FoodSwapPanel fs = new FoodSwapPanel(currentMeal, this);
+        cards.add(fs, "FOODSWAP");
+        cardMap.put("FOODSWAP", fs);
+        cl.show(cards, "FOODSWAP");
+    }
+
+}
