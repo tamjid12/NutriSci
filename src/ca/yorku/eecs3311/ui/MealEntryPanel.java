@@ -1,29 +1,51 @@
 package ca.yorku.eecs3311.ui;
 
-import ca.yorku.eecs3311.meal.MealEntry;
-import ca.yorku.eecs3311.meal.MealItem;
-import ca.yorku.eecs3311.meal.MealLogController;
-import ca.yorku.eecs3311.meal.MealType;
-import ca.yorku.eecs3311.nutrient.NutrientCalculator;
-import ca.yorku.eecs3311.nutrient.NutrientInfo;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSpinner;
+import javax.swing.JSplitPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.SpinnerDateModel;
+import javax.swing.SwingConstants;
+import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableModel;
 
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.data.category.DefaultCategoryDataset;
 
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import javax.swing.table.DefaultTableModel;
-import java.awt.*;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Map;
-import java.util.ArrayList;
-import java.util.List;
+import ca.yorku.eecs3311.meal.MealEntry;
+import ca.yorku.eecs3311.meal.MealItem;
+import ca.yorku.eecs3311.meal.MealLogController;
+import ca.yorku.eecs3311.meal.MealType;
+import ca.yorku.eecs3311.nutrient.NutrientCalculator;
+import ca.yorku.eecs3311.nutrient.NutrientInfo;
 
 /**
  * This panel allows the user to log a meal by selecting a date, time, and meal type,
@@ -138,13 +160,14 @@ public class MealEntryPanel extends JPanel {
         JButton showNutBtn = makeButton("Show Nutrients");
         JButton saveBtn    = makeButton("Save Entry");
         JButton historyBtn = makeButton("Meal History");
+        JButton swapBtn    = makeButton("Food Swap");  // New button
         JButton backBtn    = makeButton("Back");
 
         showNutBtn.addActionListener(e -> showNutrients());
         saveBtn   .addActionListener(e -> saveEntry());
         backBtn   .addActionListener(e -> nav.showSelectProfile());
 
-        // NEW: Open Meal History window (with delete support)
+        // NEW: Open Meal History window
         historyBtn.addActionListener(e -> {
             MealHistoryPanel historyPanel = new MealHistoryPanel(nav, profileName);
             JFrame frame = new JFrame("Meal History");
@@ -154,11 +177,22 @@ public class MealEntryPanel extends JPanel {
             frame.setVisible(true);
         });
 
+        // Swap action
+        swapBtn.addActionListener(e -> {
+            List<MealItem> items = collectItems();
+            if (items.isEmpty()) {
+                statusLbl.setText("Add ingredients before swapping.");
+                return;
+            }
+            nav.showFoodSwapPanel(items); // Navigator handles panel switch
+        });
+
         JPanel btns = new JPanel(new FlowLayout(FlowLayout.CENTER,10,0));
         btns.setOpaque(false);
         btns.add(showNutBtn);
         btns.add(saveBtn);
-        btns.add(historyBtn);    // Inserted here!
+        btns.add(historyBtn);
+        btns.add(swapBtn);   // Add the button here
         btns.add(backBtn);
 
         statusLbl.setFont(statusLbl.getFont().deriveFont(Font.BOLD,14f));
@@ -171,6 +205,7 @@ public class MealEntryPanel extends JPanel {
         south.add(statusLbl, BorderLayout.SOUTH);
         return south;
     }
+
 
     private JButton makeButton(String text) {
         JButton b = new JButton(text);
