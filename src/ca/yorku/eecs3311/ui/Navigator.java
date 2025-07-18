@@ -1,5 +1,8 @@
 package ca.yorku.eecs3311.ui;
 
+import java.util.List;
+
+import ca.yorku.eecs3311.meal.MealItem;
 import ca.yorku.eecs3311.profile.UserProfile;
 /**
  * The Navigator interface defines the main navigation operations used by the UI components
@@ -15,4 +18,6 @@ public interface Navigator {
     void showSelectProfile();
     void showMealLog(String profileName);
     void showJournal();
+    void showFoodSwapPanel(List<MealItem> currentMeal);
+
 }
