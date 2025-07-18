@@ -1,10 +1,10 @@
 package ca.yorku.eecs3311.ui;
 
 import java.awt.BorderLayout;
-import java.awt.event.ActionEvent;
-import java.util.HashMap;
+import java.awt.Font;
+import java.awt.GridLayout;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -12,67 +12,109 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.SwingConstants;
 
 import ca.yorku.eecs3311.meal.MealItem;
 
 public class FoodSwapPanel extends JPanel {
-    private JComboBox<String> goalBox;
-    private JButton suggestBtn;
-    private JTextArea resultArea;
+    private final Navigator nav;
+    private final List<MealItem> originalMeal;
+    private JTextArea originalTextArea, swappedTextArea;
+    private JComboBox<String> goalBox1;
+    private JComboBox<String> goalBox2;
 
-    private final FoodSwapController controller;
-    private final List<MealItem> currentMeal;
-
-    public FoodSwapPanel(List<MealItem> currentMeal) {
-        this.currentMeal = currentMeal;
-        Map<String, Double> mealMap = new HashMap<>();
-        for (MealItem item : currentMeal) {
-            mealMap.put(item.getFoodName(), item.getQuantity());
-        }
-        this.controller = new FoodSwapController(mealMap);
-
+    public FoodSwapPanel(Navigator nav, List<MealItem> currentMeal) {
+        this.nav = nav;
+        this.originalMeal = currentMeal;
         initUI();
     }
 
     private void initUI() {
-        setLayout(new BorderLayout());
+        setLayout(new BorderLayout(10, 10));
 
-        JLabel goalLabel = new JLabel("Select Nutritional Goal:");
-        goalBox = new JComboBox<>(new String[]{
-                "Reduce Calories",
-                "Increase Fiber",
-                "Reduce Sugar",
-                "Increase Protein"
-        });
+        JLabel header = new JLabel("Food Swap Suggestions", SwingConstants.CENTER);
+        header.setFont(new Font("Arial", Font.BOLD, 18));
+        add(header, BorderLayout.NORTH);
 
-        suggestBtn = new JButton("Suggest Swap");
-        resultArea = new JTextArea(12, 40);
-        resultArea.setEditable(false);
+        JPanel centerPanel = new JPanel(new GridLayout(1, 2, 10, 10));
 
-        suggestBtn.addActionListener(this::onSuggestSwap);
+        originalTextArea = new JTextArea();
+        originalTextArea.setEditable(false);
+        swappedTextArea = new JTextArea();
+        swappedTextArea.setEditable(false);
 
-        JPanel topPanel = new JPanel();
-        topPanel.add(goalLabel);
-        topPanel.add(goalBox);
-        topPanel.add(suggestBtn);
+        updateOriginalMealDisplay();
 
-        add(topPanel, BorderLayout.NORTH);
-        add(new JScrollPane(resultArea), BorderLayout.CENTER);
+        centerPanel.add(new JScrollPane(originalTextArea));
+        centerPanel.add(new JScrollPane(swappedTextArea));
+        add(centerPanel, BorderLayout.CENTER);
+
+        JPanel controlPanel = new JPanel(new GridLayout(4, 1, 5, 5));
+        goalBox1 = new JComboBox<>(new String[]{"Select Goal", "Reduce Calories", "Reduce Sugar", "Increase Protein", "Increase Fiber"});
+        goalBox2 = new JComboBox<>(new String[]{"Select Second Goal (optional)", "Reduce Calories", "Reduce Sugar", "Increase Protein", "Increase Fiber"});
+        JButton swapBtn = new JButton("Swap");
+        JButton backBtn = new JButton("Back");
+
+        swapBtn.addActionListener(e -> performSwap());
+        backBtn.addActionListener(e -> nav.showMealLog(null)); // or pass profileName if needed
+
+        controlPanel.add(goalBox1);
+        controlPanel.add(goalBox2);
+        controlPanel.add(swapBtn);
+        controlPanel.add(backBtn);
+
+        add(controlPanel, BorderLayout.SOUTH);
     }
 
-    private void onSuggestSwap(ActionEvent e) {
-        String goal = (String) goalBox.getSelectedItem();
-        Map<String, Double> swapped = controller.suggestSwap(goal, currentMeal);
+    private void updateOriginalMealDisplay() {
+        StringBuilder sb = new StringBuilder("Original Meal:\n");
+        for (MealItem item : originalMeal) {
+            sb.append("- ").append(item.getFoodName()).append(" (g): ").append(item.getQuantity()).append("\n");
+        }
+        originalTextArea.setText(sb.toString());
+    }
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("Original Meal:\n");
-        currentMeal.forEach(item ->
-                sb.append("- ").append(item.getFoodName()).append(" (g): ").append(item.getQuantity()).append("\n"));
+    private void performSwap() {
+        String goal1 = (String) goalBox1.getSelectedItem();
+        String goal2 = (String) goalBox2.getSelectedItem();
 
-        sb.append("\nSuggested Swap:\n");
-        swapped.forEach((food, qty) ->
-                sb.append("- ").append(food).append(" (g): ").append(qty).append("\n"));
+        List<MealItem> swapped = new ArrayList<>();
+        for (MealItem item : originalMeal) {
+            String name = item.getFoodName();
+            double qty = item.getQuantity();
 
-        resultArea.setText(sb.toString());
+            // Simple hardcoded logic
+            if (goal1.contains("Reduce Calories") || goal2.contains("Reduce Calories")) {
+                if (name.equalsIgnoreCase("Bacon")) {
+                    swapped.add(new MealItem(0, "Grilled Chicken", qty));
+                    continue;
+                }
+            }
+            if (goal1.contains("Increase Protein") || goal2.contains("Increase Protein")) {
+                if (name.equalsIgnoreCase("White Bread")) {
+                    swapped.add(new MealItem(0, "Whole Wheat Bread", qty));
+                    continue;
+                }
+            }
+            if (goal1.contains("Increase Fiber") || goal2.contains("Increase Fiber")) {
+                if (name.equalsIgnoreCase("White Bread")) {
+                    swapped.add(new MealItem(0, "Oatmeal", qty));
+                    continue;
+                }
+            }
+            if (goal1.contains("Reduce Sugar") || goal2.contains("Reduce Sugar")) {
+                if (name.equalsIgnoreCase("Jam")) {
+                    swapped.add(new MealItem(0, "Nut Butter (unsweetened)", qty));
+                    continue;
+                }
+            }
+            swapped.add(item); // default: no swap
+        }
+
+        StringBuilder sb = new StringBuilder("Swapped Meal:\n");
+        for (MealItem item : swapped) {
+            sb.append("- ").append(item.getFoodName()).append(" (g): ").append(item.getQuantity()).append("\n");
+        }
+        swappedTextArea.setText(sb.toString());
     }
 }
