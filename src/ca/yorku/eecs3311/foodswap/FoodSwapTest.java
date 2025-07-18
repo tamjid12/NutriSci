@@ -1,38 +1,39 @@
-// FoodSwapTest.java
 package ca.yorku.eecs3311.foodswap;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import ca.yorku.eecs3311.meal.MealItem;
+import java.util.*;
 
 public class FoodSwapTest {
+
     public static void main(String[] args) {
-        // Sample current meal
-        List<MealItem> currentMeal = new ArrayList<>();
-        currentMeal.add(new MealItem(0, 0, "White Bread", 100.0));
-        currentMeal.add(new MealItem(0, 0, "Bacon", 50.0));
+        Scanner scanner = new Scanner(System.in);
 
-        // Convert List<MealItem> to Map<String, Double>
-        Map<String, Double> mealMap = new HashMap<>();
-        for (MealItem item : currentMeal) {
-            mealMap.put(item.getFoodName(), item.getQuantity());
-        }
-
-        // Initialize controller and test swap
-        FoodSwapController controller = new FoodSwapController(mealMap);
-        Map<String, Double> swapped = controller.suggestSwap("Reduce Calories", currentMeal);
+        Map<String, Double> originalMeal = new LinkedHashMap<>();
+        originalMeal.put("White Bread", 100.0);
+        originalMeal.put("Bacon", 50.0);
 
         System.out.println("Original Meal:");
-        for (MealItem item : currentMeal) {
-            System.out.println("- " + item.getFoodName() + " (g): " + item.getQuantity());
+        originalMeal.forEach((k, v) -> System.out.println("- " + k + " (g): " + v));
+
+        System.out.println("\nChoose a goal: [1] Reduce Calories, [2] Increase Protein");
+        String choice = scanner.nextLine();
+
+        Map<String, Double> swappedMeal = new LinkedHashMap<>(originalMeal);
+
+        switch (choice) {
+            case "1":
+                swappedMeal.put("White Bread", 80.0); // reduced
+                swappedMeal.put("Bacon", 0.0); // removed
+                swappedMeal.put("Avocado", 30.0); // replacement
+                break;
+            case "2":
+                swappedMeal.put("Chicken", 100.0); // add high-protein item
+                break;
+            default:
+                System.out.println("Invalid choice.");
+                return;
         }
 
         System.out.println("\nSuggested Swaps:");
-        for (Map.Entry<String, Double> entry : swapped.entrySet()) {
-            System.out.println("- " + entry.getKey() + " (g): " + entry.getValue());
-        }
+        swappedMeal.forEach((k, v) -> System.out.println("- " + k + " (g): " + v));
     }
 }
