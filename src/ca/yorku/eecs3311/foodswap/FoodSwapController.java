@@ -75,7 +75,7 @@ public class FoodSwapController {
         }
 
         try (Connection conn = DriverManager.getConnection(
-                "jdbc:mysql://localhost:3306/nutriscidb", "root", "Ravenclaw16.");
+                "jdbc:mysql://localhost:3306/nutriscidb", "root", "Tamjid01711!");
             PreparedStatement stmt = conn.prepareStatement(
                 """
                 SELECT fn.FoodDescription, na.NutrientValue

@@ -95,6 +95,7 @@ public class MainApp implements Navigator {
     }
 
    // @Override
+
     public void showSelectProfile() {
         // Remove old SELECT panel
         JPanel old = cardMap.remove("SELECT");

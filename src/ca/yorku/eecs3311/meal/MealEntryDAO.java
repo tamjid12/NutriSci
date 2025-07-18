@@ -1,4 +1,3 @@
-// src/ca/yorku/eecs3311/meal/MealEntryDAO.java
 package ca.yorku.eecs3311.meal;
 
 import java.sql.*;
@@ -11,12 +10,11 @@ import java.util.List;
  * Data Access Object (DAO) class for handling database operations
  * related to meal entries and their associated food items.
  *
- * Provides methods to Save a MealEntry and its items in a transaction and Load meal entries for a given profile and date
- *
- * This class acts as an Adapter between the application and
- * the underlying SQL database
+ * Provides methods to Save a MealEntry and its items in a transaction,
+ * Load meal entries for a given profile/date,
+ * Load all meal entries for a profile,
+ * and Delete a meal entry by ID.
  */
-
 public class MealEntryDAO {
     private static final String URL      = "jdbc:mysql://localhost:3306/nutriscidb";
     private static final String USER     = "root";
@@ -119,5 +117,76 @@ public class MealEntryDAO {
             ex.printStackTrace();
         }
         return entries;
+    }
+
+    /** Loads all meal entries (with items) for a profile (all dates) */
+    public List<MealEntry> findByProfile(String profile) {
+        String sqlEntry = """
+            SELECT id, meal_type, meal_date, meal_time
+            FROM MealEntry
+            WHERE profile_name = ?
+            ORDER BY meal_date DESC, meal_time DESC
+        """;
+        String sqlItems = """
+            SELECT id, food_name, quantity
+            FROM MealItem
+            WHERE entry_id = ?
+        """;
+        List<MealEntry> entries = new ArrayList<>();
+        try (Connection conn = DriverManager.getConnection(URL,USER,PASSWORD);
+             PreparedStatement pe = conn.prepareStatement(sqlEntry)) {
+
+            pe.setString(1, profile);
+            try (ResultSet rs = pe.executeQuery()) {
+                while (rs.next()) {
+                    int entryId = rs.getInt("id");
+                    MealType type = MealType.valueOf(rs.getString("meal_type"));
+                    LocalDate date = rs.getDate("meal_date").toLocalDate();
+                    LocalTime time = rs.getTime("meal_time").toLocalTime();
+                    MealEntry e = new MealEntry(entryId, profile, type, date, time, new ArrayList<>());
+
+                    // fetch items
+                    try (PreparedStatement pi = conn.prepareStatement(sqlItems)) {
+                        pi.setInt(1, entryId);
+                        try (ResultSet rs2 = pi.executeQuery()) {
+                            while (rs2.next()) {
+                                e.getItems().add(new MealItem(
+                                        rs2.getInt("id"),
+                                        entryId,
+                                        rs2.getString("food_name"),
+                                        rs2.getDouble("quantity")
+                                ));
+                            }
+                        }
+                    }
+                    entries.add(e);
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return entries;
+    }
+
+    /** Deletes a meal entry (and all its items) by id */
+    public boolean deleteMealEntry(int id) {
+        String sql1 = "DELETE FROM MealItem WHERE entry_id = ?";
+        String sql2 = "DELETE FROM MealEntry WHERE id = ?";
+        try (Connection conn = DriverManager.getConnection(URL,USER,PASSWORD)) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps1 = conn.prepareStatement(sql1)) {
+                ps1.setInt(1, id);
+                ps1.executeUpdate();
+            }
+            try (PreparedStatement ps2 = conn.prepareStatement(sql2)) {
+                ps2.setInt(1, id);
+                int rows = ps2.executeUpdate();
+                conn.commit();
+                return rows > 0;
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return false;
+        }
     }
 }

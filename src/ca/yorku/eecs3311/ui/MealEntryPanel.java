@@ -31,6 +31,7 @@ import java.util.List;
  * It supports live nutrient preview (including calories, macros, and key vitamins)
  * and a visual calorie bar chart (before and after entry).
  * Users can save the entry to the database.
+ * (Updated: Meal History button opens MealHistoryPanel with Delete support)
  */
 public class MealEntryPanel extends JPanel {
     private final String profileName;
@@ -136,16 +137,28 @@ public class MealEntryPanel extends JPanel {
     private JPanel buildButtonPanel() {
         JButton showNutBtn = makeButton("Show Nutrients");
         JButton saveBtn    = makeButton("Save Entry");
+        JButton historyBtn = makeButton("Meal History");
         JButton backBtn    = makeButton("Back");
 
         showNutBtn.addActionListener(e -> showNutrients());
         saveBtn   .addActionListener(e -> saveEntry());
         backBtn   .addActionListener(e -> nav.showSelectProfile());
 
+        // NEW: Open Meal History window (with delete support)
+        historyBtn.addActionListener(e -> {
+            MealHistoryPanel historyPanel = new MealHistoryPanel(nav, profileName);
+            JFrame frame = new JFrame("Meal History");
+            frame.setContentPane(historyPanel);
+            frame.pack();
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
+        });
+
         JPanel btns = new JPanel(new FlowLayout(FlowLayout.CENTER,10,0));
         btns.setOpaque(false);
         btns.add(showNutBtn);
         btns.add(saveBtn);
+        btns.add(historyBtn);    // Inserted here!
         btns.add(backBtn);
 
         statusLbl.setFont(statusLbl.getFont().deriveFont(Font.BOLD,14f));
@@ -168,6 +181,7 @@ public class MealEntryPanel extends JPanel {
         b.setFont(b.getFont().deriveFont(13f));
         return b;
     }
+
     //Reads and validates ingredients, then shows the nutrient table and calorie intake chart side by side.
     private void showNutrients() {
         try {
@@ -238,6 +252,7 @@ public class MealEntryPanel extends JPanel {
             ex.printStackTrace();
         }
     }
+
     // Reads form data and saves a new meal entry after validation.
     private void saveEntry() {
         try {
@@ -272,6 +287,7 @@ public class MealEntryPanel extends JPanel {
             ex.printStackTrace();
         }
     }
+
     // Maps nutrient symbols to user friendly names
     private String displayName(String sym) {
         return switch (sym) {
@@ -286,11 +302,13 @@ public class MealEntryPanel extends JPanel {
             default       -> sym;
         };
     }
+
     // returns date
     private LocalDate getSelectedDate() {
         Date d = (Date) dateSpinner.getValue();
         return d.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
+
     // Adds a new row in the ingredient entry list.
     private void addIngredientRow() {
         JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT,5,0));
@@ -318,6 +336,7 @@ public class MealEntryPanel extends JPanel {
         itemsPanel.add(row);
         itemsPanel.revalidate();
     }
+
     // Collects all entered ingredients and quantities into MealItem objects.
     private List<MealItem> collectItems() {
         List<MealItem> list = new ArrayList<>();
