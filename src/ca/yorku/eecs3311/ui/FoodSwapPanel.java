@@ -15,7 +15,7 @@ import javax.swing.JTextArea;
 
 import ca.yorku.eecs3311.foodswap.FoodSwapController;
 import ca.yorku.eecs3311.meal.MealItem;
-import ca.yorku.eecs3311.nutrient.FoodSwapDAO;
+import ca.yorku.eecs3311.foodswap.FoodSwapDAO;
 
 public class FoodSwapPanel extends JPanel {
     private JComboBox<String> goalBox;

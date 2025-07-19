@@ -1,4 +1,4 @@
-package ca.yorku.eecs3311.nutrient;
+package ca.yorku.eecs3311.foodswap;
 
 import java.sql.*;
 import java.util.*;
@@ -27,13 +27,13 @@ public class FoodSwapDAO {
 
             // Step 1: Find target food’s group and nutrient value
             String infoQuery =
-                "SELECT fn.FoodID, fn.FoodGroupID, na.NutrientValue " +
-                "FROM food_name fn " +
-                "JOIN nutrient_amount na ON fn.FoodID = na.FoodID " +
-                "JOIN nutrient_name nn ON na.NutrientID = nn.NutrientID " +
-                "WHERE fn.FoodDescription LIKE ? " +
-                "AND nn.NutrientSymbol = ? " +
-                "LIMIT 1";
+                    "SELECT fn.FoodID, fn.FoodGroupID, na.NutrientValue " +
+                            "FROM food_name fn " +
+                            "JOIN nutrient_amount na ON fn.FoodID = na.FoodID " +
+                            "JOIN nutrient_name nn ON na.NutrientID = nn.NutrientID " +
+                            "WHERE fn.FoodDescription LIKE ? " +
+                            "AND nn.NutrientSymbol = ? " +
+                            "LIMIT 1";
 
             int groupId = -1;
             double value = -1;
@@ -53,15 +53,15 @@ public class FoodSwapDAO {
 
             // Step 2: Find better swaps in same food group
             String swapQuery =
-                "SELECT fn.FoodDescription " +
-                "FROM food_name fn " +
-                "JOIN nutrient_amount na ON fn.FoodID = na.FoodID " +
-                "JOIN nutrient_name nn ON na.NutrientID = nn.NutrientID " +
-                "WHERE nn.NutrientSymbol = ? " +
-                "AND fn.FoodGroupID = ? " +
-                "AND na.NutrientValue " + comparison + " ? " +
-                "ORDER BY na.NutrientValue " + sortOrder + " " +
-                "LIMIT 3";
+                    "SELECT fn.FoodDescription " +
+                            "FROM food_name fn " +
+                            "JOIN nutrient_amount na ON fn.FoodID = na.FoodID " +
+                            "JOIN nutrient_name nn ON na.NutrientID = nn.NutrientID " +
+                            "WHERE nn.NutrientSymbol = ? " +
+                            "AND fn.FoodGroupID = ? " +
+                            "AND na.NutrientValue " + comparison + " ? " +
+                            "ORDER BY na.NutrientValue " + sortOrder + " " +
+                            "LIMIT 3";
 
             try (PreparedStatement swapStmt = conn.prepareStatement(swapQuery)) {
                 swapStmt.setString(1, nutrientSymbol);
