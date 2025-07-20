@@ -1,4 +1,4 @@
-package ca.yorku.eecs3311.nutrient;
+package ca.yorku.eecs3311.foodswap;
 
 import java.sql.*;
 import java.util.ArrayList;
