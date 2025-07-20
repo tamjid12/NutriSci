@@ -14,8 +14,9 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
 import ca.yorku.eecs3311.foodswap.FoodSwapController;
-import ca.yorku.eecs3311.meal.MealItem;
 import ca.yorku.eecs3311.foodswap.FoodSwapDAO;
+import ca.yorku.eecs3311.foodswap.SwapInfo;
+import ca.yorku.eecs3311.meal.MealItem;
 
 public class FoodSwapPanel extends JPanel {
     private JComboBox<String> goalBox;
@@ -59,7 +60,7 @@ public class FoodSwapPanel extends JPanel {
 
         suggestBtn.addActionListener(this::onSuggestSwap);
         backBtn.addActionListener(e -> {
-            if (nav != null) nav.showMealLog(""); // Make sure this is defined in your Navigator
+            if (nav != null) nav.showMealLog("");
         });
 
         JPanel topPanel = new JPanel();
@@ -75,8 +76,13 @@ public class FoodSwapPanel extends JPanel {
     private void showOriginalMeal() {
         StringBuilder sb = new StringBuilder();
         sb.append("Original Meal:\n");
-        currentMeal.forEach(item ->
-                sb.append("- ").append(item.getFoodName()).append(" (g): ").append(item.getQuantity()).append("\n"));
+        for (MealItem item : currentMeal) {
+            SwapInfo info = controller.getNutrientSummary(item.getFoodName(), item.getQuantity());
+            sb.append("- ").append(item.getFoodName())
+              .append(": Quantity: ").append(info.getQuantity()).append(" g")
+              .append(" | Calories: ").append(String.format("%.1f", info.getCalories())).append(" kCal")
+              .append(" | Protein: ").append(String.format("%.1f", info.getProtein())).append(" g\n");
+        }
         sb.append("\nSuggested Swap:\n(Press 'Suggest Swap' to see recommendations)");
         resultArea.setText(sb.toString());
     }
@@ -88,23 +94,29 @@ public class FoodSwapPanel extends JPanel {
         Map<String, Double> swapped = new HashMap<>();
         for (MealItem item : currentMeal) {
             List<String> suggestions = dao.suggestSwap(item.getFoodName(), goal);
-            String replacement = (!suggestions.isEmpty() && !suggestions.get(0).equalsIgnoreCase(item.getFoodName()))
-                                 ? suggestions.get(0)
-                                 : item.getFoodName();
+            String replacement = suggestions.isEmpty() ? item.getFoodName() : suggestions.get(0);
             swapped.put(replacement, item.getQuantity());
         }
 
         StringBuilder sb = new StringBuilder();
         sb.append("Original Meal:\n");
-        currentMeal.forEach(item ->
-            sb.append("- ").append(item.getFoodName()).append(" (g): ").append(item.getQuantity()).append("\n"));
+        for (MealItem item : currentMeal) {
+            SwapInfo info = controller.getNutrientSummary(item.getFoodName(), item.getQuantity());
+            sb.append("- ").append(item.getFoodName())
+              .append(": Quantity: ").append(info.getQuantity()).append(" g")
+              .append(" | Calories: ").append(String.format("%.1f", info.getCalories())).append(" kCal")
+              .append(" | Protein: ").append(String.format("%.1f", info.getProtein())).append(" g\n");
+        }
 
-        sb.append("\nSuggested Swap:\n");
-        swapped.forEach((food, qty) ->
-            sb.append("- ").append(food).append(" (g): ").append(qty).append("\n"));
+        sb.append("\nSuggested Swaps:\n");
+        for (Map.Entry<String, Double> entry : swapped.entrySet()) {
+            SwapInfo info = controller.getNutrientSummary(entry.getKey(), entry.getValue());
+            sb.append("- ").append(entry.getKey())
+              .append(": Quantity: ").append(info.getQuantity()).append(" g")
+              .append(" | Calories: ").append(String.format("%.1f", info.getCalories())).append(" kCal")
+              .append(" | Protein: ").append(String.format("%.1f", info.getProtein())).append(" g\n");
+        }
 
         resultArea.setText(sb.toString());
     }
-
-
 }
