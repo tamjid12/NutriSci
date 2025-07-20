@@ -1,75 +1,58 @@
-package ca.yorku.eecs3311.foodswap;
+package ca.yorku.eecs3311.nutrient;
 
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.*;
 
 public class FoodSwapDAO {
-    private static final String DB_URL = "jdbc:mysql://localhost:3306/nutriscidb";
-    private static final String DB_USER = "root";
-    private static final String DB_PASS = "Tamjid01711!"; // Replace securely in production
+    private static final String URL = "jdbc:mysql://localhost:3306/nutriscidb";
+    private static final String USER = "root";
+    private static final String PASSWORD = "Tamjid01711!";
 
     /**
-     * Suggests food swaps for a given food name and nutritional goal,
-     * ensuring swaps are from the same food group.
+     * Suggests a food swap based on the nutritional goal.
+     *
+     * @param originalFood  Name of the current food
+     * @param goal          Nutrient goal (e.g., Reduce Calories, Increase Protein)
+     * @return A list of candidate replacement food descriptions
      */
-    public List<String> suggestSwap(String foodName, String goal) {
-        List<String> swaps = new ArrayList<>();
+    public List<String> suggestSwap(String originalFood, String goal) {
+        List<String> results = new ArrayList<>();
 
-        String nutrientSymbol = getNutrientSymbol(goal);
-        String comparison = getComparisonOperator(goal);
-        String sortOrder = getSortOrder(goal);
+        String nutrientSymbol = switch (goal) {
+            case "Reduce Calories" -> "KCAL";
+            case "Increase Protein" -> "PROT";
+            case "Reduce Sugar" -> "SUGAR";
+            case "Increase Fiber" -> "FIBTG";
+            default -> null;
+        };
 
-        if (nutrientSymbol == null || comparison == null || sortOrder == null) {
-            return swaps; // Invalid goal
-        }
+        if (nutrientSymbol == null) return results;
 
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS)) {
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD)) {
+            int foodGroupId = getFoodGroupId(conn, originalFood);
+            if (foodGroupId == -1) return results;
 
-            // Step 1: Find target food’s group and nutrient value
-            String infoQuery =
-                    "SELECT fn.FoodID, fn.FoodGroupID, na.NutrientValue " +
-                            "FROM food_name fn " +
-                            "JOIN nutrient_amount na ON fn.FoodID = na.FoodID " +
-                            "JOIN nutrient_name nn ON na.NutrientID = nn.NutrientID " +
-                            "WHERE fn.FoodDescription LIKE ? " +
-                            "AND nn.NutrientSymbol = ? " +
-                            "LIMIT 1";
+            int targetNutrientId = getNutrientId(conn, nutrientSymbol);
+            if (targetNutrientId == -1) return results;
 
-            int groupId = -1;
-            double value = -1;
+            // Find candidate food in the same group, ordered by the nutrient
+            String sql = "SELECT fn.FoodDescription, na.NutrientValue " +
+                    "FROM food_name fn " +
+                    "JOIN nutrient_amount na ON fn.FoodID = na.FoodID " +
+                    "WHERE fn.FoodGroupID = ? " +
+                    "AND na.NutrientID = ? " +
+                    "ORDER BY na.NutrientValue " + (goal.startsWith("Increase") ? "DESC" : "ASC") + " " +
+                    "LIMIT 3";
 
-            try (PreparedStatement infoStmt = conn.prepareStatement(infoQuery)) {
-                infoStmt.setString(1, "%" + foodName + "%");
-                infoStmt.setString(2, nutrientSymbol);
-                ResultSet rs = infoStmt.executeQuery();
-
-                if (rs.next()) {
-                    groupId = rs.getInt("FoodGroupID");
-                    value = rs.getDouble("NutrientValue");
-                } else {
-                    return swaps; // No match found
-                }
-            }
-
-            // Step 2: Find better swaps in same food group
-            String swapQuery =
-                    "SELECT fn.FoodDescription " +
-                            "FROM food_name fn " +
-                            "JOIN nutrient_amount na ON fn.FoodID = na.FoodID " +
-                            "JOIN nutrient_name nn ON na.NutrientID = nn.NutrientID " +
-                            "WHERE nn.NutrientSymbol = ? " +
-                            "AND fn.FoodGroupID = ? " +
-                            "AND na.NutrientValue " + comparison + " ? " +
-                            "ORDER BY na.NutrientValue " + sortOrder + " " +
-                            "LIMIT 3";
-
-            try (PreparedStatement swapStmt = conn.prepareStatement(swapQuery)) {
-                swapStmt.setString(1, nutrientSymbol);
-                swapStmt.setInt(2, groupId);
-                swapStmt.setDouble(3, value);
-                ResultSet rs = swapStmt.executeQuery();
-                while (rs.next()) {
-                    swaps.add(rs.getString("FoodDescription"));
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, foodGroupId);
+                ps.setInt(2, targetNutrientId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        results.add(rs.getString("FoodDescription"));
+                    }
                 }
             }
 
@@ -77,35 +60,38 @@ public class FoodSwapDAO {
             e.printStackTrace();
         }
 
-        return swaps;
+        return results;
     }
 
-    /** Maps goal to nutrient symbol in DB */
-    private String getNutrientSymbol(String goal) {
-        return switch (goal) {
-            case "Increase Protein" -> "PROT";
-            case "Reduce Calories" -> "KCAL";
-            case "Increase Fiber"  -> "FIB";
-            case "Reduce Sugar"    -> "SUGAR";
-            default -> null;
-        };
+    /**
+     * Finds the FoodGroupID of a given food
+     */
+    private int getFoodGroupId(Connection conn, String foodDescription) throws SQLException {
+        String sql = "SELECT FoodGroupID FROM food_name WHERE FoodDescription = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, foodDescription);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("FoodGroupID");
+                }
+            }
+        }
+        return -1;
     }
 
-    /** Comparison operator: greater or less */
-    private String getComparisonOperator(String goal) {
-        return switch (goal) {
-            case "Increase Protein", "Increase Fiber" -> ">";
-            case "Reduce Calories", "Reduce Sugar"    -> "<";
-            default -> null;
-        };
-    }
-
-    /** Sorting order to get best match */
-    private String getSortOrder(String goal) {
-        return switch (goal) {
-            case "Increase Protein", "Increase Fiber" -> "DESC";
-            case "Reduce Calories", "Reduce Sugar"    -> "ASC";
-            default -> null;
-        };
+    /**
+     * Retrieves the NutrientID for a nutrient symbol like 'KCAL' or 'PROT'
+     */
+    private int getNutrientId(Connection conn, String nutrientSymbol) throws SQLException {
+        String sql = "SELECT NutrientID FROM nutrient_name WHERE NutrientSymbol = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, nutrientSymbol);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("NutrientID");
+                }
+            }
+        }
+        return -1;
     }
 }
