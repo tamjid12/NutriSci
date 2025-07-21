@@ -11,12 +11,17 @@ public class NutrientInfo {
     private final String unit;
 
     // Constructs a new NutrientInfo object.
-    public NutrientInfo(String symbol, double amount, String unit) {
+    public  NutrientInfo(String symbol, double amount, String unit) {
         this.symbol = symbol;
         this.amount = amount;
         this.unit   = unit;
     }
+
     public String getSymbol() { return symbol; }
     public double getAmount() { return amount; }
     public String getUnit()   { return unit; }
+
+    @Override public String toString() {
+        return symbol + ": " + amount + " " + unit;
+}
 }

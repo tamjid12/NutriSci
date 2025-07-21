@@ -14,7 +14,7 @@ public class DBTest {
         try {
             // Establish a connection to the local MySQL database
             Connection conn = DriverManager.getConnection(
-                    "jdbc:mysql://localhost:3306/nutriscidb", "root", "Tamjid01711!");
+                    "jdbc:mysql://localhost:3306/nutriscidb", "root", "pulkit@123!");
 
             System.out.println("Connected to nutriscidb!");
 

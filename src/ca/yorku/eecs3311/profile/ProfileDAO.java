@@ -13,7 +13,7 @@ import java.util.List;
 public class ProfileDAO {
     private static final String URL  = "jdbc:mysql://localhost:3306/nutriscidb";
     private static final String USER = "root";
-    private static final String PASS = "Tamjid01711!";
+    private static final String PASS = "pulkit@123!";
 
     private Connection getConn() throws SQLException {
         return DriverManager.getConnection(URL, USER, PASS);

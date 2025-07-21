@@ -8,7 +8,7 @@ import java.util.*;
 public class FoodSwapDAO {
     private static final String URL = "jdbc:mysql://localhost:3306/nutriscidb";
     private static final String USER = "root";
-    private static final String PASSWORD = "Tamjid01711!";
+    private static final String PASSWORD = "pulkit@123!";
 
     /**
      * Suggests a food swap based on the nutritional goal.
