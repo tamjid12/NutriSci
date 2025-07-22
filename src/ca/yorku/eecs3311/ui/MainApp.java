@@ -149,4 +149,14 @@ public class MainApp implements Navigator {
         cl.show(cards, "FOODSWAP");
     }
 
+    public void showCalorieIntakePanel(String profileName){
+        JPanel old = cardMap.remove("CALORIES");
+        if (old != null) cards.remove(old);
+
+        CalorieIntakePanel cp = new CalorieIntakePanel(this, profileName);
+        cards.add(cp, "CALORIES");
+        cardMap.put("CALORIES", cp);
+        cl.show(cards, "CALORIES");
+    }
+
 }

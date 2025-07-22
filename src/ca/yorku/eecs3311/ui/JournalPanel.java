@@ -13,6 +13,8 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
 import java.util.List;
+import org.jfree.chart.JFreeChart;
+import org.jfree.data.general.DefaultPieDataset;
 
 /**
  * This panel shows a journal of all meals logged for a given profile on a selected date.
@@ -30,6 +32,10 @@ public class JournalPanel extends JPanel {
     private final JTable  table;
     private final DefaultTableModel model;
 
+    //private final JTextField startDateField;
+    //private final JTextField endDateField;
+   // private final JButton showChartButton;
+
     public JournalPanel(Navigator nav, String profileName) {
         this.nav = nav;
         this.profileName = profileName;
@@ -46,6 +52,7 @@ public class JournalPanel extends JPanel {
         top.add(loadBtn);
         top.add(backBtn);
         add(top, BorderLayout.NORTH);
+
 
         // Table
         model = new DefaultTableModel(new Object[]{"Type","Time","Calories","ID"}, 0) {

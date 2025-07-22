@@ -19,5 +19,7 @@ public interface Navigator {
     void showMealLog(String profileName);
     void showJournal();
     void showFoodSwapPanel(List<MealItem> currentMeal);
+    void showCalorieIntakePanel(String profileName);
+
 
 }

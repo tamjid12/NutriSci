@@ -64,3 +64,5 @@ public class MealEntry {
                 + " | items=" + items.size();
     }
 }
+
+

@@ -162,10 +162,11 @@ public class MealEntryPanel extends JPanel {
         JButton historyBtn = makeButton("Meal History");
         JButton swapBtn    = makeButton("Food Swap");  // New button
         JButton backBtn    = makeButton("Back");
-
+        JButton showCaloriesButton = makeButton("Show Calorie Intake");
         showNutBtn.addActionListener(e -> showNutrients());
         saveBtn   .addActionListener(e -> saveEntry());
         backBtn   .addActionListener(e -> nav.showSelectProfile());
+        showCaloriesButton .addActionListener(e ->  nav.showCalorieIntakePanel(profileName));;
 
         // NEW: Open Meal History window
         historyBtn.addActionListener(e -> {
@@ -193,6 +194,7 @@ public class MealEntryPanel extends JPanel {
         btns.add(saveBtn);
         btns.add(historyBtn);
         btns.add(swapBtn);   // Add the button here
+        btns.add(showCaloriesButton);
         btns.add(backBtn);
 
         statusLbl.setFont(statusLbl.getFont().deriveFont(Font.BOLD,14f));
