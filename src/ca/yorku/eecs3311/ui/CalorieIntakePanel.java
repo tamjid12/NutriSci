@@ -12,9 +12,14 @@ import java.time.ZoneId;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import org.jfree.*;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.data.category.DefaultCategoryDataset;
 
 public class CalorieIntakePanel extends JPanel {
     private final Navigator nav;
