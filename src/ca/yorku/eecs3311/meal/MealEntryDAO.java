@@ -1,10 +1,18 @@
 package ca.yorku.eecs3311.meal;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Time;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+
 /**
  * Data Access Object (DAO) class for handling database operations
  * related to meal entries and their associated food items.
@@ -17,25 +25,9 @@ import java.util.List;
 public class MealEntryDAO {
     private static final String URL      = "jdbc:mysql://localhost:3306/nutriscidb";
     private static final String USER     = "root";
-    private static final String PASSWORD = "Tamjid01711!";
+    private static final String PASSWORD = "Ravenclaw16.";
 
-    // Save, find, delete methods stay the same...
-
-    public boolean updateMealItem(int itemId, String newFoodName, double quantity) {
-        String sql = "UPDATE MealItem SET food_name = ?, quantity = ? WHERE id = ?";
-        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, newFoodName);
-            ps.setDouble(2, quantity);
-            ps.setInt(3, itemId);
-            return ps.executeUpdate() > 0;
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-            return false;
-        }
-    }
-
- /** Inserts a MealEntry and its MealItems in one transaction */
+    /** Inserts a MealEntry and its MealItems in one transaction */
     public boolean save(MealEntry e) {
         String insertEntry = """
             INSERT INTO MealEntry
@@ -182,6 +174,22 @@ public class MealEntryDAO {
         }
         return entries;
     }
+    
+    public boolean updateMealItem(int itemId, String newFoodName, double quantity) {
+        String sql = "UPDATE MealItem SET food_name = ?, quantity = ? WHERE id = ?";
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, newFoodName);
+            ps.setDouble(2, quantity);
+            ps.setInt(3, itemId);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+
 
     /** Deletes a meal entry (and all its items) by id */
     public boolean deleteMealEntry(int id) {
