@@ -1,12 +1,9 @@
 package ca.yorku.eecs3311.ui;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.FlowLayout;
-import java.awt.Font;
+import java.awt.*;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
@@ -34,7 +31,7 @@ public class MealHistoryPanel extends JPanel {
         add(title, BorderLayout.NORTH);
 
         // Table setup
-        String[] columns = {"ID", "Date", "Time", "Meal Type", "Items", "Delete", "Swap"};
+        String[] columns = {"ID", "Date", "Time", "Meal Type", "Items", "Delete", "Update"};
         tableModel = new DefaultTableModel(columns, 0) {
             public boolean isCellEditable(int row, int col) { return col >= 5; }
         };
@@ -51,76 +48,19 @@ public class MealHistoryPanel extends JPanel {
         table.getColumn("Delete").setCellRenderer(new ButtonRenderer("Delete"));
         table.getColumn("Delete").setCellEditor(new ButtonEditor(new JCheckBox(), tableModel, dao, this, nav, "Delete"));
 
-        // SWAP button
-        table.getColumn("Swap").setCellRenderer(new ButtonRenderer("Swap"));
-        table.getColumn("Swap").setCellEditor(new ButtonEditor(new JCheckBox(), tableModel, dao, this, nav, "Swap"));
+        // UPDATE button
+        table.getColumn("Update").setCellRenderer(new ButtonRenderer("Update"));
+        table.getColumn("Update").setCellEditor(new ButtonEditor(new JCheckBox(), tableModel, dao, this, nav, "Update"));
 
         loadMealEntries();
 
         JScrollPane scroll = new JScrollPane(table);
         add(scroll, BorderLayout.CENTER);
 
-        // --- Save Swap Button ---
-        JButton saveSwapBtn = new JButton("Save Swap");
-        saveSwapBtn.addActionListener(e -> {
-            int row = table.getSelectedRow();
-            if (row == -1) {
-                JOptionPane.showMessageDialog(this, "Please select a row to swap.", "No Selection", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            int modelRow = table.convertRowIndexToModel(row);
-            int mealId = (int) tableModel.getValueAt(modelRow, 0); // internal model contains ID
-            List<MealEntry> meals = dao.findByProfile(profileName);
-            MealEntry selected = meals.stream().filter(m -> m.getId() == mealId).findFirst().orElse(null);
-
-            if (selected == null) {
-                JOptionPane.showMessageDialog(this, "Meal not found.", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            String[] foodOptions = selected.getItems().stream().map(MealItem::getFoodName).toArray(String[]::new);
-            String foodToSwap = (String) JOptionPane.showInputDialog(
-                    this, "Select food to swap:", "Swap Selection",
-                    JOptionPane.PLAIN_MESSAGE, null, foodOptions, foodOptions[0]
-            );
-
-            if (foodToSwap == null) return;
-
-            MealItem itemToReplace = selected.getItems().stream()
-                    .filter(i -> i.getFoodName().equals(foodToSwap))
-                    .findFirst().orElse(null);
-
-            if (itemToReplace == null) {
-                JOptionPane.showMessageDialog(this, "Item not found.", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            String goal = "Reduce Calories"; // could be dynamic later
-            List<String> alternatives = new ca.yorku.eecs3311.foodswap.FoodSwapDAO()
-                    .suggestSwap(itemToReplace.getFoodName(), goal);
-
-            if (alternatives.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "No swap found.", "Info", JOptionPane.INFORMATION_MESSAGE);
-                return;
-            }
-
-            String newFood = alternatives.get(0);
-            boolean ok = dao.updateMealItem(itemToReplace.getId(), newFood, itemToReplace.getQuantity());
-
-            if (ok) {
-                JOptionPane.showMessageDialog(this, "Swap saved! " + foodToSwap + " ➔ " + newFood);
-                loadMealEntries();
-            } else {
-                JOptionPane.showMessageDialog(this, "Swap failed.", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        });
-
         JButton closeBtn = new JButton("Close");
         closeBtn.addActionListener(e -> ((JFrame) SwingUtilities.getWindowAncestor(this)).dispose());
 
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        btnPanel.add(saveSwapBtn);
         btnPanel.add(closeBtn);
         add(btnPanel, BorderLayout.SOUTH);
     }
@@ -138,7 +78,7 @@ public class MealHistoryPanel extends JPanel {
                     m.getMealType().toString(),
                     m.getItems().size(),
                     "Delete",
-                    "Swap"
+                    "Update"
             });
         }
     }
@@ -150,14 +90,13 @@ class ButtonRenderer extends JButton implements TableCellRenderer {
         setOpaque(true);
         setText(label);
     }
-
     public Component getTableCellRendererComponent(JTable table, Object value,
-        boolean isSelected, boolean hasFocus, int row, int column) {
+                                                   boolean isSelected, boolean hasFocus, int row, int column) {
         return this;
     }
 }
 
-// Editor class for Delete and Swap buttons
+// Editor class for Delete and Update buttons
 class ButtonEditor extends DefaultCellEditor {
     private final JButton button;
     private boolean clicked;
@@ -181,7 +120,7 @@ class ButtonEditor extends DefaultCellEditor {
 
     @Override
     public Component getTableCellEditorComponent(JTable table, Object value,
-        boolean isSelected, int row, int column) {
+                                                 boolean isSelected, int row, int column) {
         this.row = row;
         button.setText(actionType);
         clicked = true;
@@ -206,19 +145,73 @@ class ButtonEditor extends DefaultCellEditor {
                         JOptionPane.showMessageDialog(button, "Failed to delete meal.");
                     }
                 }
-            } else if (actionType.equals("Swap")) {
+            } else if (actionType.equals("Update")) {
                 List<MealEntry> allMeals = dao.findByProfile(panel.profileName);
                 MealEntry selected = allMeals.stream()
                         .filter(m -> m.getId() == mealId)
                         .findFirst().orElse(null);
                 if (selected != null && !selected.getItems().isEmpty()) {
-                    nav.showFoodSwapPanel(selected.getItems());
+                    JFrame top = (JFrame) SwingUtilities.getWindowAncestor(panel);
+
+                    // Prepare old foods/quantities
+                    List<String> oldFoods = selected.getItems().stream()
+                            .map(MealItem::getFoodName).collect(Collectors.toList());
+                    List<String> oldQtys = selected.getItems().stream()
+                            .map(i -> String.valueOf(i.getQuantity())).collect(Collectors.toList());
+
+                    // Show the improved update dialog
+                    MealSwapDialog dialog = new MealSwapDialog(top, oldFoods, oldQtys);
+                    dialog.setVisible(true);
+
+                    if (dialog.isConfirmed()) {
+                        List<String> newFoods = dialog.getNewFoods();
+                        List<String> newQtys = dialog.getNewQuantities();
+
+                        // Build new items
+                        List<MealItem> newItems = new java.util.ArrayList<>();
+                        for (int i = 0; i < newFoods.size(); ++i) {
+                            String f = newFoods.get(i);
+                            String q = newQtys.get(i);
+                            try {
+                                double qty = Double.parseDouble(q);
+                                newItems.add(new MealItem(0, f, qty));
+                            } catch (NumberFormatException ex) {
+                                // ignore invalid
+                            }
+                        }
+                        if (!newItems.isEmpty()) {
+                            // Show confirmation with old/new comparison
+                            StringBuilder msg = new StringBuilder("<html>Are you sure you want to update the meal's ingredients?<br><br>");
+                            msg.append("<b>Old:</b> ");
+                            for (int i = 0; i < oldFoods.size(); ++i) {
+                                msg.append(oldFoods.get(i)).append(" (").append(oldQtys.get(i)).append(")");
+                                if (i < oldFoods.size() - 1) msg.append(", ");
+                            }
+                            msg.append("<br><b>New:</b> ");
+                            for (int i = 0; i < newFoods.size(); ++i) {
+                                msg.append(newFoods.get(i)).append(" (").append(newQtys.get(i)).append(")");
+                                if (i < newFoods.size() - 1) msg.append(", ");
+                            }
+                            msg.append("</html>");
+                            int confirm = JOptionPane.showConfirmDialog(panel, msg.toString(), "Confirm Update", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+
+                            if (confirm == JOptionPane.YES_OPTION) {
+                                boolean ok = dao.updateMealItems(selected.getId(), newItems);
+                                if (ok) {
+                                    JOptionPane.showMessageDialog(panel, "Meal updated successfully!");
+                                    panel.loadMealEntries();
+                                } else {
+                                    JOptionPane.showMessageDialog(panel, "Update failed!", "Error", JOptionPane.ERROR_MESSAGE);
+                                }
+                            }
+                        }
+                    }
                 } else {
                     JOptionPane.showMessageDialog(button, "No items found in this meal.");
                 }
             }
+            clicked = false;
         }
-        clicked = false;
         return actionType;
     }
 }

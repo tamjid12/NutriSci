@@ -109,33 +109,41 @@ public class MealEntryPanel extends JPanel {
         // Items panel
         itemsPanel.setLayout(new BoxLayout(itemsPanel, BoxLayout.Y_AXIS));
         itemsPanel.setBackground(Color.WHITE);
-        JScrollPane scroll = new JScrollPane(itemsPanel);
-        scroll.setPreferredSize(new Dimension(350, 140));
-        scroll.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
-        gbc.gridy = ++y; form.add(scroll, gbc);
 
-        // Add ingredient button
-        JButton addBtn = makeButton("Add Ingredient");
+        // --- Ingredient scroll panel with fixed width and increased height ---
+        JScrollPane scroll = new JScrollPane(itemsPanel,
+                JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scroll.setPreferredSize(new Dimension(430, 95)); // More height, no horizontal scrollbar
+        scroll.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
         gbc.gridy = ++y; gbc.gridwidth = 2;
-        form.add(addBtn, gbc);
+        form.add(scroll, gbc);
+
+        // Add ingredient + Save Entry button on same line
+        JPanel entryBtnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
+        JButton addBtn = makeButton("Add Ingredient");
+        JButton saveBtn = makeButton("Save Entry");
+        entryBtnPanel.setOpaque(false);
+        entryBtnPanel.add(addBtn);
+        entryBtnPanel.add(saveBtn);
         addBtn.addActionListener(e -> addIngredientRow());
+        saveBtn.addActionListener(e -> saveEntry());
+        gbc.gridy = ++y; gbc.gridwidth = 2;
+        form.add(entryBtnPanel, gbc);
 
         return form;
     }
 
     private JPanel buildButtonPanel() {
         JButton showNutBtn = makeButton("Show Nutrients");
-        JButton saveBtn = makeButton("Save Entry");
         JButton historyBtn = makeButton("Meal History");
         JButton swapBtn = makeButton("Food Swap");
-        JButton backBtn = makeButton("Back");
         JButton showCaloriesButton = makeButton("Show Calorie Intake");
+        JButton backBtn = makeButton("Back");
 
         showNutBtn.addActionListener(e -> showNutrients());
-        saveBtn.addActionListener(e -> saveEntry());
         backBtn.addActionListener(e -> nav.showSelectProfile());
         showCaloriesButton.addActionListener(e -> nav.showCalorieIntakePanel(profileName));
-
         historyBtn.addActionListener(e -> {
             MealHistoryPanel historyPanel = new MealHistoryPanel(nav, profileName);
             JFrame frame = new JFrame("Meal History");
@@ -144,7 +152,6 @@ public class MealEntryPanel extends JPanel {
             frame.setLocationRelativeTo(null);
             frame.setVisible(true);
         });
-
         swapBtn.addActionListener(e -> {
             List<MealItem> items = collectItems(false);
             if (items.isEmpty()) {
@@ -154,10 +161,10 @@ public class MealEntryPanel extends JPanel {
             nav.showFoodSwapPanel(items);
         });
 
-        JPanel btns = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        // --- Action buttons in a modern panel, spaced out ---
+        JPanel btns = new JPanel(new FlowLayout(FlowLayout.CENTER, 18, 5));
         btns.setOpaque(false);
         btns.add(showNutBtn);
-        btns.add(saveBtn);
         btns.add(historyBtn);
         btns.add(swapBtn);
         btns.add(showCaloriesButton);
@@ -169,7 +176,7 @@ public class MealEntryPanel extends JPanel {
 
         JPanel south = new JPanel(new BorderLayout());
         south.setOpaque(false);
-        south.add(btns, BorderLayout.NORTH);
+        south.add(btns, BorderLayout.CENTER);
         south.add(statusLbl, BorderLayout.SOUTH);
         return south;
     }
@@ -179,12 +186,11 @@ public class MealEntryPanel extends JPanel {
         b.setFocusPainted(false);
         b.setBackground(new Color(70, 130, 180));
         b.setForeground(Color.WHITE);
-        b.setBorder(new EmptyBorder(6, 12, 6, 12));
+        b.setBorder(new EmptyBorder(6, 16, 6, 16));
         b.setFont(b.getFont().deriveFont(13f));
         return b;
     }
 
-    // Reads and validates ingredients, then shows the nutrient table and calorie intake chart side by side.
     private void showNutrients() {
         try {
             List<MealItem> items = collectItems(true);
@@ -192,9 +198,7 @@ public class MealEntryPanel extends JPanel {
                 statusLbl.setText("Add at least one valid ingredient");
                 return;
             }
-
             Map<String, NutrientInfo> all = calc.calcForItemsWithUnits(items);
-
             List<String> BASIC = List.of(
                     "KCAL", "PROT", "FAT", "CARB",
                     "VITC", "D-IU", "B6", "B12"
@@ -216,7 +220,6 @@ public class MealEntryPanel extends JPanel {
             JScrollPane tableScroll = new JScrollPane(nutTable);
             tableScroll.setPreferredSize(new Dimension(280, 160));
 
-            // calculate before/after calories
             LocalDate date = getSelectedDate();
             double before = 0;
             for (MealEntry me : controller.getMealsForUserOnDate(profileName, date)) {
@@ -254,7 +257,6 @@ public class MealEntryPanel extends JPanel {
         }
     }
 
-    // Reads form data and saves a new meal entry after validation, with all validations and confirmation.
     private void saveEntry() {
         try {
             Date d = (Date) dateSpinner.getValue();
@@ -273,8 +275,7 @@ public class MealEntryPanel extends JPanel {
                     return;
                 }
             }
-
-            List<MealItem> items = collectItems(true); // true = show error dialogs
+            List<MealItem> items = collectItems(true);
             if (items.isEmpty()) {
                 statusLbl.setText("Add at least one valid ingredient");
                 return;
@@ -331,7 +332,6 @@ public class MealEntryPanel extends JPanel {
         return false;
     }
 
-    // Custom confirmation dialog with centered buttons and no empty space
     private boolean showNutrientConfirmDialog(List<MealItem> items, Map<String, NutrientInfo> nutrients, LocalDate date, MealType type) {
         JDialog dialog = new JDialog((JFrame) SwingUtilities.getWindowAncestor(this), "Review Nutrients and Ingredients - Save Entry?", true);
         dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
@@ -413,7 +413,6 @@ public class MealEntryPanel extends JPanel {
         return result[0];
     }
 
-    // Utility formatters
     private String fmt(NutrientInfo ni) {
         if (ni == null) return "-";
         return String.format("%.2f", ni.getAmount());
@@ -442,17 +441,28 @@ public class MealEntryPanel extends JPanel {
         return d.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
 
+    // --- Improved add ingredient row with bigger food box and proper minus button ---
     private void addIngredientRow() {
-        JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 2));
         row.setOpaque(false);
         row.setBorder(new EmptyBorder(2, 0, 2, 0));
 
-        JTextField foodField = new JTextField(12);
-        JTextField qtyField = new JTextField(5);
-        qtyField.setToolTipText("Enter quantity in grams");
-        JButton removeBtn = new JButton("–");
+        JTextArea foodField = new JTextArea(2, 20); // 2 rows, bigger field
+        foodField.setFont(new Font("Arial", Font.PLAIN, 13));
+        foodField.setLineWrap(true);
+        foodField.setWrapStyleWord(true);
+        JScrollPane foodScroll = new JScrollPane(foodField,
+                JScrollPane.VERTICAL_SCROLLBAR_NEVER,
+                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        foodScroll.setPreferredSize(new Dimension(220, 38));
+
+        JTextField qtyField = new JTextField(7);
+
+        JButton removeBtn = new JButton("-");
         removeBtn.setFocusPainted(false);
-        removeBtn.setFont(removeBtn.getFont().deriveFont(12f));
+        removeBtn.setFont(new Font("Arial", Font.BOLD, 16));
+        removeBtn.setPreferredSize(new Dimension(36, 28));
+        removeBtn.setMargin(new Insets(2, 6, 2, 6));
         removeBtn.addActionListener(e -> {
             itemsPanel.remove(row);
             itemsPanel.revalidate();
@@ -460,7 +470,7 @@ public class MealEntryPanel extends JPanel {
         });
 
         row.add(new JLabel("Food:"));
-        row.add(foodField);
+        row.add(foodScroll);
         row.add(new JLabel("Quantity:"));
         row.add(qtyField);
         row.add(removeBtn);
@@ -470,13 +480,14 @@ public class MealEntryPanel extends JPanel {
     }
 
     // Collects all entered ingredients and quantities into MealItem objects.
-    // The 'showErrorDialogs' argument determines whether to show error dialogs for invalid input (true) or just silently skip invalid rows (false, for Food Swap etc).
     private List<MealItem> collectItems(boolean showErrorDialogs) {
         List<MealItem> list = new ArrayList<>();
         for (Component c : itemsPanel.getComponents()) {
             if (!(c instanceof JPanel)) continue;
             JPanel row = (JPanel) c;
-            String food = ((JTextField) row.getComponent(1)).getText().trim();
+            JScrollPane foodScroll = (JScrollPane) row.getComponent(1);
+            JTextArea foodArea = (JTextArea) foodScroll.getViewport().getView();
+            String food = foodArea.getText().trim();
             String qtyS = ((JTextField) row.getComponent(3)).getText().trim();
             if (!food.isEmpty() && !qtyS.isEmpty()) {
                 try {

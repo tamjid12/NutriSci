@@ -1,13 +1,6 @@
 package ca.yorku.eecs3311.meal;
 
-import java.sql.Connection;
-import java.sql.Date;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Time;
+import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -20,12 +13,13 @@ import java.util.List;
  * Provides methods to Save a MealEntry and its items in a transaction,
  * Load meal entries for a given profile/date,
  * Load all meal entries for a profile,
- * and Delete a meal entry by ID.
+ * Delete a meal entry by ID,
+ * and Update all MealItems for a MealEntry (used for food swap).
  */
 public class MealEntryDAO {
     private static final String URL      = "jdbc:mysql://localhost:3306/nutriscidb";
     private static final String USER     = "root";
-    private static final String PASSWORD = "Ravenclaw16.";
+    private static final String PASSWORD = "Tamjid01711!";
 
     /** Inserts a MealEntry and its MealItems in one transaction */
     public boolean save(MealEntry e) {
@@ -36,7 +30,7 @@ public class MealEntryDAO {
         """;
         String insertItem = """
             INSERT INTO MealItem
-              (id, food_name, quantity)
+              (entry_id, food_name, quantity)
             VALUES (?,?,?)
         """;
 
@@ -68,7 +62,6 @@ public class MealEntryDAO {
                     }
                 }
             }
-
             conn.commit();
             return true;
         } catch (SQLException ex) {
@@ -87,7 +80,7 @@ public class MealEntryDAO {
         String sqlItems = """
             SELECT id, food_name, quantity
             FROM MealItem
-            WHERE id = ?
+            WHERE entry_id = ?
         """;
 
         List<MealEntry> entries = new ArrayList<>();
@@ -137,7 +130,7 @@ public class MealEntryDAO {
         String sqlItems = """
             SELECT id, food_name, quantity
             FROM MealItem
-            WHERE id = ?
+            WHERE entry_id = ?
         """;
         List<MealEntry> entries = new ArrayList<>();
         try (Connection conn = DriverManager.getConnection(URL,USER,PASSWORD);
@@ -174,7 +167,37 @@ public class MealEntryDAO {
         }
         return entries;
     }
-    
+
+    /** Update all MealItems for a MealEntry (swap all items). Used for manual swap. */
+    public boolean updateMealItems(int entryId, List<MealItem> newItems) {
+        String deleteOld = "DELETE FROM MealItem WHERE entry_id = ?";
+        String insertNew = "INSERT INTO MealItem (entry_id, food_name, quantity) VALUES (?, ?, ?)";
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD)) {
+            conn.setAutoCommit(false);
+            // Delete old items
+            try (PreparedStatement del = conn.prepareStatement(deleteOld)) {
+                del.setInt(1, entryId);
+                del.executeUpdate();
+            }
+            // Insert new items
+            try (PreparedStatement ins = conn.prepareStatement(insertNew)) {
+                for (MealItem item : newItems) {
+                    ins.setInt(1, entryId);
+                    ins.setString(2, item.getFoodName());
+                    ins.setDouble(3, item.getQuantity());
+                    ins.addBatch();
+                }
+                ins.executeBatch();
+            }
+            conn.commit();
+            return true;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return false;
+        }
+    }
+
+    /** Update a single MealItem's food name and quantity (used by some swaps) */
     public boolean updateMealItem(int itemId, String newFoodName, double quantity) {
         String sql = "UPDATE MealItem SET food_name = ?, quantity = ? WHERE id = ?";
         try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
@@ -189,11 +212,9 @@ public class MealEntryDAO {
         }
     }
 
-
-
     /** Deletes a meal entry (and all its items) by id */
     public boolean deleteMealEntry(int id) {
-        String sql1 = "DELETE FROM MealItem WHERE id = ?";
+        String sql1 = "DELETE FROM MealItem WHERE entry_id = ?";
         String sql2 = "DELETE FROM MealEntry WHERE id = ?";
         try (Connection conn = DriverManager.getConnection(URL,USER,PASSWORD)) {
             conn.setAutoCommit(false);
