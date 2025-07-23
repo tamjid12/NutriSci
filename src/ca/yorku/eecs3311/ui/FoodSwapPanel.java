@@ -27,6 +27,8 @@ public class FoodSwapPanel extends JPanel {
     private final FoodSwapController controller;
     private final List<MealItem> currentMeal;
     private final Navigator nav;
+    private final FoodSwapDAO dao = new FoodSwapDAO();
+    private final Map<MealItem, MealItem> swapMap = new HashMap<>();
 
     public FoodSwapPanel(List<MealItem> currentMeal, Navigator nav) {
         this.currentMeal = currentMeal;
@@ -48,14 +50,12 @@ public class FoodSwapPanel extends JPanel {
         JLabel goalLabel = new JLabel("Select Nutritional Goal:");
         goalBox = new JComboBox<>(new String[]{
                 "Reduce Calories",
-                "Increase Fiber",
-                "Reduce Sugar",
                 "Increase Protein"
         });
 
         suggestBtn = new JButton("Suggest Swap");
         backBtn = new JButton("Back");
-        resultArea = new JTextArea(14, 50);
+        resultArea = new JTextArea(18, 60);
         resultArea.setEditable(false);
 
         suggestBtn.addActionListener(this::onSuggestSwap);
@@ -78,43 +78,49 @@ public class FoodSwapPanel extends JPanel {
         sb.append("Original Meal:\n");
         for (MealItem item : currentMeal) {
             SwapInfo info = controller.getNutrientSummary(item.getFoodName(), item.getQuantity());
-            sb.append("- ").append(item.getFoodName())
-              .append(": Quantity: ").append(info.getQuantity()).append(" g")
-              .append(" | Calories: ").append(String.format("%.1f", info.getCalories())).append(" kCal")
-              .append(" | Protein: ").append(String.format("%.1f", info.getProtein())).append(" g\n");
+            sb.append(String.format("- %s: Quantity: %.0f g | Calories: %.1f kCal | Protein: %.1f g\n",
+                    item.getFoodName(),
+                    item.getQuantity(),
+                    info.getCalories(),
+                    info.getProtein()));
         }
-        sb.append("\nSuggested Swap:\n(Press 'Suggest Swap' to see recommendations)");
+        sb.append("\nSuggested Swaps:\n(Press 'Suggest Swap' to see recommendations)");
         resultArea.setText(sb.toString());
     }
 
     private void onSuggestSwap(ActionEvent e) {
+        swapMap.clear();
         String goal = (String) goalBox.getSelectedItem();
-        FoodSwapDAO dao = new FoodSwapDAO();
-
-        Map<String, Double> swapped = new HashMap<>();
-        for (MealItem item : currentMeal) {
-            List<String> suggestions = dao.suggestSwap(item.getFoodName(), goal);
-            String replacement = suggestions.isEmpty() ? item.getFoodName() : suggestions.get(0);
-            swapped.put(replacement, item.getQuantity());
-        }
 
         StringBuilder sb = new StringBuilder();
         sb.append("Original Meal:\n");
         for (MealItem item : currentMeal) {
-            SwapInfo info = controller.getNutrientSummary(item.getFoodName(), item.getQuantity());
-            sb.append("- ").append(item.getFoodName())
-              .append(": Quantity: ").append(info.getQuantity()).append(" g")
-              .append(" | Calories: ").append(String.format("%.1f", info.getCalories())).append(" kCal")
-              .append(" | Protein: ").append(String.format("%.1f", info.getProtein())).append(" g\n");
+            SwapInfo originalInfo = controller.getNutrientSummary(item.getFoodName(), item.getQuantity());
+            sb.append(String.format("- %s: Quantity: %.0f g | Calories: %.1f kCal | Protein: %.1f g\n",
+                    item.getFoodName(),
+                    item.getQuantity(),
+                    originalInfo.getCalories(),
+                    originalInfo.getProtein()));
         }
 
         sb.append("\nSuggested Swaps:\n");
-        for (Map.Entry<String, Double> entry : swapped.entrySet()) {
-            SwapInfo info = controller.getNutrientSummary(entry.getKey(), entry.getValue());
-            sb.append("- ").append(entry.getKey())
-              .append(": Quantity: ").append(info.getQuantity()).append(" g")
-              .append(" | Calories: ").append(String.format("%.1f", info.getCalories())).append(" kCal")
-              .append(" | Protein: ").append(String.format("%.1f", info.getProtein())).append(" g\n");
+        for (MealItem item : currentMeal) {
+            double quantity = item.getQuantity();
+            List<String> candidates = dao.suggestSwap(item.getFoodName(), goal);
+
+            if (!candidates.isEmpty()) {
+                String suggested = candidates.get(0);
+                MealItem newItem = new MealItem(item.getId(), item.getEntryId(), suggested, quantity);
+                swapMap.put(item, newItem);
+
+                SwapInfo swapInfo = controller.getNutrientSummary(suggested, quantity);
+                sb.append(String.format("- %s ➔ %s: %.0f g | Calories: %.1f kCal | Protein: %.1f g\n",
+                        item.getFoodName(),
+                        suggested,
+                        quantity,
+                        swapInfo.getCalories(),
+                        swapInfo.getProtein()));
+            }
         }
 
         resultArea.setText(sb.toString());
