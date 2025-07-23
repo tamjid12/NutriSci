@@ -30,7 +30,7 @@ public class MealDAO {
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    int id = rs.getInt("entry_id");
+                    int id = rs.getInt("id");
                     String name = rs.getString("profile_name");
                     MealType type = MealType.valueOf(rs.getString("meal_type").toUpperCase());
                     LocalDate date = rs.getDate("meal_date").toLocalDate();
