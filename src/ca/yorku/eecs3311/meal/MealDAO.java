@@ -14,7 +14,7 @@ import java.util.List;
 public class MealDAO {
     private static final String URL = "jdbc:mysql://localhost:3306/nutriscidb";
     private static final String USER = "root";
-    private static final String PASSWORD = "Ravenclaw16.";
+    private static final String PASSWORD = "Tamjid01711!";
 
     public List<MealEntry> getMealsForUserBetweenDates(String profileName, LocalDate start, LocalDate end) throws SQLException {
         List<MealEntry> meals = new ArrayList<>();
