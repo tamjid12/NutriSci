@@ -139,15 +139,7 @@ public class MainApp implements Navigator {
         cardMap.put("JOURNAL", journal);
         cl.show(cards, "JOURNAL");
     }
-    public void showFoodSwapPanel(List<MealItem> currentMeal) {
-        JPanel old = cardMap.remove("FOODSWAP");
-        if (old != null) cards.remove(old);
-
-        FoodSwapPanel fs = new FoodSwapPanel(currentMeal, this);
-        cards.add(fs, "FOODSWAP");
-        cardMap.put("FOODSWAP", fs);
-        cl.show(cards, "FOODSWAP");
-    }
+  
 
     public void showCalorieIntakePanel(String profileName){
         JPanel old = cardMap.remove("CALORIES");
@@ -157,6 +149,16 @@ public class MainApp implements Navigator {
         cards.add(cp, "CALORIES");
         cardMap.put("CALORIES", cp);
         cl.show(cards, "CALORIES");
+    }
+    @Override
+    public void showFoodSwapPanel(List<MealItem> currentMeal) {
+        JPanel old = cardMap.remove("FOODSWAP");
+        if (old != null) cards.remove(old);
+
+        FoodSwapPanel panel = new FoodSwapPanel(currentMeal, this);
+        cardMap.put("FOODSWAP", panel);
+        cards.add(panel, "FOODSWAP");
+        cl.show(cards, "FOODSWAP");
     }
 
 }
