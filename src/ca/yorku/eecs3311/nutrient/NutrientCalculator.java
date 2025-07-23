@@ -50,7 +50,7 @@ public class NutrientCalculator {
             JOIN food_name      fn ON mi.food_name = fn.FoodDescription
             JOIN nutrient_amount na ON fn.FoodID        = na.FoodID
             JOIN nutrient_name   nn ON na.NutrientID    = nn.NutrientID
-           WHERE mi.entry_id = ?
+           WHERE mi.id = ?
            GROUP BY nn.NutrientSymbol, nn.NutrientUnit
         """;
 
@@ -131,7 +131,7 @@ public class NutrientCalculator {
                SUM(mi.quantity * na.NutrientValue / 100.0) AS total,
                COUNT(DISTINCT DATE(m.entry_time)) as days
         FROM MealEntry m
-        JOIN MealItem mi ON m.entry_id = mi.entry_id
+        JOIN MealItem mi ON m.id = mi.id
         JOIN food_name fn ON mi.food_name = fn.FoodDescription
         JOIN nutrient_amount na ON fn.FoodID = na.FoodID
         JOIN nutrient_name nn ON na.NutrientID = nn.NutrientID
