@@ -1,14 +1,17 @@
 package ca.yorku.eecs3311.foodswap;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.*;
 
 public class FoodSwapDAO {
     private static final String URL = "jdbc:mysql://localhost:3306/nutriscidb";
     private static final String USER = "root";
-    private static final String PASSWORD = "pulkit@123!";
+    private static final String PASSWORD = "Tamjid01711!";
 
     /**
      * Suggests a food swap based on the nutritional goal.
