@@ -5,7 +5,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
-
 /**
  * Data Access Object (DAO) class for handling database operations
  * related to meal entries and their associated food items.
@@ -20,7 +19,23 @@ public class MealEntryDAO {
     private static final String USER     = "root";
     private static final String PASSWORD = "Tamjid01711!";
 
-    /** Inserts a MealEntry and its MealItems in one transaction */
+    // Save, find, delete methods stay the same...
+
+    public boolean updateMealItem(int itemId, String newFoodName, double quantity) {
+        String sql = "UPDATE MealItem SET food_name = ?, quantity = ? WHERE id = ?";
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, newFoodName);
+            ps.setDouble(2, quantity);
+            ps.setInt(3, itemId);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return false;
+        }
+    }
+
+ /** Inserts a MealEntry and its MealItems in one transaction */
     public boolean save(MealEntry e) {
         String insertEntry = """
             INSERT INTO MealEntry
@@ -29,7 +44,7 @@ public class MealEntryDAO {
         """;
         String insertItem = """
             INSERT INTO MealItem
-              (entry_id, food_name, quantity)
+              (id, food_name, quantity)
             VALUES (?,?,?)
         """;
 
@@ -80,7 +95,7 @@ public class MealEntryDAO {
         String sqlItems = """
             SELECT id, food_name, quantity
             FROM MealItem
-            WHERE entry_id = ?
+            WHERE id = ?
         """;
 
         List<MealEntry> entries = new ArrayList<>();
@@ -130,7 +145,7 @@ public class MealEntryDAO {
         String sqlItems = """
             SELECT id, food_name, quantity
             FROM MealItem
-            WHERE entry_id = ?
+            WHERE id = ?
         """;
         List<MealEntry> entries = new ArrayList<>();
         try (Connection conn = DriverManager.getConnection(URL,USER,PASSWORD);
@@ -170,7 +185,7 @@ public class MealEntryDAO {
 
     /** Deletes a meal entry (and all its items) by id */
     public boolean deleteMealEntry(int id) {
-        String sql1 = "DELETE FROM MealItem WHERE entry_id = ?";
+        String sql1 = "DELETE FROM MealItem WHERE id = ?";
         String sql2 = "DELETE FROM MealEntry WHERE id = ?";
         try (Connection conn = DriverManager.getConnection(URL,USER,PASSWORD)) {
             conn.setAutoCommit(false);
