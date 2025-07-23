@@ -7,20 +7,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.time.LocalDate;
-import java.util.ArrayList;
 
-/**
- * Computes nutrient totals for meal entries or raw item lists,
- * using the CNF tables: food_name, nutrient_amount, nutrient_name.
- */
 public class NutrientCalculator {
     private static final String URL = "jdbc:mysql://localhost:3306/nutriscidb";
     private static final String USER = "root";
     private static final String PASSWORD = "Tamjid01711!";
 
-    /**
-     * Convenience wrapper that returns just the numeric totals for each nutrient, discarding the unit.
-     */
     public Map<String, Double> calcForEntry(int entryId) throws SQLException {
         Map<String, ca.yorku.eecs3311.nutrient.NutrientInfo> withUnits = calcForEntryWithUnits(entryId);
         Map<String, Double> plain = new HashMap<>();
@@ -28,9 +20,6 @@ public class NutrientCalculator {
         return plain;
     }
 
-    /**
-     * Same as above but for a list of MealItems.
-     */
     public Map<String, Double> calcForItems(List<MealItem> items) throws SQLException {
         Map<String, ca.yorku.eecs3311.nutrient.NutrientInfo> withUnits = calcForItemsWithUnits(items);
         Map<String, Double> plain = new HashMap<>();
@@ -38,9 +27,6 @@ public class NutrientCalculator {
         return plain;
     }
 
-    /**
-     * Calculate nutrient totals for a saved meal entry – unit preserved.
-     */
     public Map<String, ca.yorku.eecs3311.nutrient.NutrientInfo> calcForEntryWithUnits(int entryId) throws SQLException {
         String sql = """
           SELECT nn.NutrientSymbol   AS sym,
@@ -63,20 +49,13 @@ public class NutrientCalculator {
                     String sym = rs.getString("sym");
                     String unit = rs.getString("unit");
                     double total = rs.getDouble("total");
-                    System.out.printf("[DEBUG] sym: %s, total: %.3f, unit: %s\n", sym, total, unit);
                     result.put(sym, new ca.yorku.eecs3311.nutrient.NutrientInfo(sym, total, unit));
                 }
                 return result;
             }
-        } catch (SQLException e) {
-            System.err.println("[ERROR] Failed to calculate nutrients for entry: " + e.getMessage());
-            throw e;
         }
     }
 
-    /**
-     * Calculate nutrient totals from a list of MealItem – unit preserved.
-     */
     public Map<String, ca.yorku.eecs3311.nutrient.NutrientInfo> calcForItemsWithUnits(List<MealItem> items) throws SQLException {
         String sql = """
           SELECT nn.NutrientSymbol AS sym,
@@ -101,9 +80,6 @@ public class NutrientCalculator {
                         double per100g = rs.getDouble("per100g");
                         double add = it.getQuantity() * per100g / 100.0;
 
-                        System.out.printf("[DEBUG] item: %s, qty: %.2f, sym: %s, val/100g: %.2f, calc: %.3f\n",
-                                it.getFoodName(), it.getQuantity(), sym, per100g, add);
-
                         map.merge(sym,
                                 new ca.yorku.eecs3311.nutrient.NutrientInfo(sym, add, unit),
                                 (prev, nxt) -> new ca.yorku.eecs3311.nutrient.NutrientInfo(
@@ -112,17 +88,11 @@ public class NutrientCalculator {
                                         unit
                                 ));
                     }
-                } catch (SQLException e) {
-                    System.err.println("[ERROR] Query failed for food: " + it.getFoodName() + ", " + e.getMessage());
                 }
             }
-        } catch (SQLException e) {
-            System.err.println("[ERROR] Connection error: " + e.getMessage());
-            throw e;
         }
         return map;
     }
-
 
     public Map<String, Double> calcAverageNutrients(LocalDate startDate, LocalDate endDate) throws SQLException {
         String sql = """
