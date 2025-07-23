@@ -5,7 +5,7 @@ import java.sql.*;
 public class MealItemDAO {
     private static final String URL = "jdbc:mysql://localhost:3306/nutriscidb";
     private static final String USER = "root";
-    private static final String PASSWORD = "Ravenclaw16.";
+    private static final String PASSWORD = "Tamjid01711!";
 
     public void updateMealItemName(int id, String newName) {
         String sql = "UPDATE MealItem SET food_name = ? WHERE id = ?";
