@@ -1,13 +1,19 @@
 package ca.yorku.eecs3311.ui;
 
-import javax.swing.*;
-import javax.swing.table.*;
-import java.awt.*;
-import java.awt.event.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.FlowLayout;
+import java.awt.Font;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import ca.yorku.eecs3311.foodswap.FoodSwapDAO;
-import ca.yorku.eecs3311.meal.*;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
+
+import ca.yorku.eecs3311.meal.MealEntry;
+import ca.yorku.eecs3311.meal.MealEntryDAO;
+import ca.yorku.eecs3311.meal.MealItem;
 
 public class MealHistoryPanel extends JPanel {
     private final MealEntryDAO dao = new MealEntryDAO();
@@ -19,6 +25,7 @@ public class MealHistoryPanel extends JPanel {
     public MealHistoryPanel(Navigator nav, String profileName) {
         this.nav = nav;
         this.profileName = profileName;
+
         setLayout(new BorderLayout(10, 10));
         setBackground(Color.WHITE);
 
@@ -32,15 +39,19 @@ public class MealHistoryPanel extends JPanel {
             public boolean isCellEditable(int row, int col) { return col >= 5; }
         };
         table = new JTable(tableModel);
-        table.removeColumn(table.getColumnModel().getColumn(0)); // hide ID
+
+        // Hide ID column visually but keep it in the model
+        table.removeColumn(table.getColumnModel().getColumn(0));
 
         table.setRowHeight(28);
         table.setFont(new Font("Arial", Font.PLAIN, 16));
         table.getTableHeader().setFont(new Font("Arial", Font.BOLD, 16));
 
+        // DELETE button
         table.getColumn("Delete").setCellRenderer(new ButtonRenderer("Delete"));
         table.getColumn("Delete").setCellEditor(new ButtonEditor(new JCheckBox(), tableModel, dao, this, nav, "Delete"));
 
+        // SWAP button
         table.getColumn("Swap").setCellRenderer(new ButtonRenderer("Swap"));
         table.getColumn("Swap").setCellEditor(new ButtonEditor(new JCheckBox(), tableModel, dao, this, nav, "Swap"));
 
@@ -49,9 +60,67 @@ public class MealHistoryPanel extends JPanel {
         JScrollPane scroll = new JScrollPane(table);
         add(scroll, BorderLayout.CENTER);
 
+        // --- Save Swap Button ---
+        JButton saveSwapBtn = new JButton("Save Swap");
+        saveSwapBtn.addActionListener(e -> {
+            int row = table.getSelectedRow();
+            if (row == -1) {
+                JOptionPane.showMessageDialog(this, "Please select a row to swap.", "No Selection", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            int modelRow = table.convertRowIndexToModel(row);
+            int mealId = (int) tableModel.getValueAt(modelRow, 0); // internal model contains ID
+            List<MealEntry> meals = dao.findByProfile(profileName);
+            MealEntry selected = meals.stream().filter(m -> m.getId() == mealId).findFirst().orElse(null);
+
+            if (selected == null) {
+                JOptionPane.showMessageDialog(this, "Meal not found.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            String[] foodOptions = selected.getItems().stream().map(MealItem::getFoodName).toArray(String[]::new);
+            String foodToSwap = (String) JOptionPane.showInputDialog(
+                    this, "Select food to swap:", "Swap Selection",
+                    JOptionPane.PLAIN_MESSAGE, null, foodOptions, foodOptions[0]
+            );
+
+            if (foodToSwap == null) return;
+
+            MealItem itemToReplace = selected.getItems().stream()
+                    .filter(i -> i.getFoodName().equals(foodToSwap))
+                    .findFirst().orElse(null);
+
+            if (itemToReplace == null) {
+                JOptionPane.showMessageDialog(this, "Item not found.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            String goal = "Reduce Calories"; // could be dynamic later
+            List<String> alternatives = new ca.yorku.eecs3311.foodswap.FoodSwapDAO()
+                    .suggestSwap(itemToReplace.getFoodName(), goal);
+
+            if (alternatives.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "No swap found.", "Info", JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+
+            String newFood = alternatives.get(0);
+            boolean ok = dao.updateMealItem(itemToReplace.getId(), newFood, itemToReplace.getQuantity());
+
+            if (ok) {
+                JOptionPane.showMessageDialog(this, "Swap saved! " + foodToSwap + " ➔ " + newFood);
+                loadMealEntries();
+            } else {
+                JOptionPane.showMessageDialog(this, "Swap failed.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
         JButton closeBtn = new JButton("Close");
         closeBtn.addActionListener(e -> ((JFrame) SwingUtilities.getWindowAncestor(this)).dispose());
+
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        btnPanel.add(saveSwapBtn);
         btnPanel.add(closeBtn);
         add(btnPanel, BorderLayout.SOUTH);
     }
@@ -75,7 +144,7 @@ public class MealHistoryPanel extends JPanel {
     }
 }
 
-// ButtonRenderer
+// Renderer class for buttons
 class ButtonRenderer extends JButton implements TableCellRenderer {
     public ButtonRenderer(String label) {
         setOpaque(true);
@@ -88,9 +157,9 @@ class ButtonRenderer extends JButton implements TableCellRenderer {
     }
 }
 
-// ButtonEditor
+// Editor class for Delete and Swap buttons
 class ButtonEditor extends DefaultCellEditor {
-    private JButton button;
+    private final JButton button;
     private boolean clicked;
     private final DefaultTableModel model;
     private final MealEntryDAO dao;
@@ -123,7 +192,7 @@ class ButtonEditor extends DefaultCellEditor {
     public Object getCellEditorValue() {
         if (clicked) {
             int modelRow = row;
-            int mealId = (int) model.getValueAt(modelRow, 0); // ID is hidden but still in model
+            int mealId = (int) model.getValueAt(modelRow, 0);
 
             if (actionType.equals("Delete")) {
                 int confirm = JOptionPane.showConfirmDialog(button, "Delete this meal?", "Confirm", JOptionPane.YES_NO_OPTION);
@@ -142,21 +211,8 @@ class ButtonEditor extends DefaultCellEditor {
                 MealEntry selected = allMeals.stream()
                         .filter(m -> m.getId() == mealId)
                         .findFirst().orElse(null);
-
                 if (selected != null && !selected.getItems().isEmpty()) {
-                    MealItem item = selected.getItems().get(0); // prompt user in future
-                    String goal = "Reduce Calories"; // default for now
-                    List<String> swaps = new FoodSwapDAO().suggestSwap(item.getFoodName(), goal);
-                    if (!swaps.isEmpty()) {
-                        String swap = swaps.get(0);
-                        boolean ok = dao.updateMealItem(item.getId(), swap, item.getQuantity());
-                        if (ok) {
-                            JOptionPane.showMessageDialog(button, "Swapped: " + item.getFoodName() + " ➔ " + swap);
-                            panel.loadMealEntries();
-                        }
-                    } else {
-                        JOptionPane.showMessageDialog(button, "No suitable swap found.");
-                    }
+                    nav.showFoodSwapPanel(selected.getItems());
                 } else {
                     JOptionPane.showMessageDialog(button, "No items found in this meal.");
                 }
