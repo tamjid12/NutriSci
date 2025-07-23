@@ -1,15 +1,13 @@
 package ca.yorku.eecs3311.ui;
 
+import javax.swing.*;
+import javax.swing.table.*;
 import java.awt.*;
+import java.awt.event.*;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableCellRenderer;
-
-import ca.yorku.eecs3311.meal.MealEntry;
-import ca.yorku.eecs3311.meal.MealEntryDAO;
-import ca.yorku.eecs3311.meal.MealItem;
+import ca.yorku.eecs3311.foodswap.FoodSwapDAO;
+import ca.yorku.eecs3311.meal.*;
 
 public class MealHistoryPanel extends JPanel {
     private final MealEntryDAO dao = new MealEntryDAO();
@@ -28,14 +26,14 @@ public class MealHistoryPanel extends JPanel {
         title.setFont(title.getFont().deriveFont(20f));
         add(title, BorderLayout.NORTH);
 
+        // Table setup
         String[] columns = {"ID", "Date", "Time", "Meal Type", "Items", "Delete", "Swap"};
         tableModel = new DefaultTableModel(columns, 0) {
-            public boolean isCellEditable(int row, int col) {
-                return col >= 5;
-            }
+            public boolean isCellEditable(int row, int col) { return col >= 5; }
         };
         table = new JTable(tableModel);
-        table.removeColumn(table.getColumnModel().getColumn(0));
+        table.removeColumn(table.getColumnModel().getColumn(0)); // hide ID
+
         table.setRowHeight(28);
         table.setFont(new Font("Arial", Font.PLAIN, 16));
         table.getTableHeader().setFont(new Font("Arial", Font.BOLD, 16));
@@ -51,66 +49,9 @@ public class MealHistoryPanel extends JPanel {
         JScrollPane scroll = new JScrollPane(table);
         add(scroll, BorderLayout.CENTER);
 
-        JButton saveSwapBtn = new JButton("Save Swap");
-        saveSwapBtn.addActionListener(e -> {
-            int row = table.getSelectedRow();
-            if (row == -1) {
-                JOptionPane.showMessageDialog(this, "Please select a row to swap.", "No Selection", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            int modelRow = table.convertRowIndexToModel(row);
-            int mealId = (int) tableModel.getValueAt(modelRow, 0); // internal model contains ID
-            List<MealEntry> meals = dao.findByProfile(profileName);
-            MealEntry selected = meals.stream().filter(m -> m.getId() == mealId).findFirst().orElse(null);
-
-            if (selected == null) {
-                JOptionPane.showMessageDialog(this, "Meal not found.", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            String[] foodOptions = selected.getItems().stream().map(MealItem::getFoodName).toArray(String[]::new);
-            String foodToSwap = (String) JOptionPane.showInputDialog(
-                    this, "Select food to swap:", "Swap Selection",
-                    JOptionPane.PLAIN_MESSAGE, null, foodOptions, foodOptions[0]
-            );
-
-            if (foodToSwap == null) return;
-
-            MealItem itemToReplace = selected.getItems().stream()
-                    .filter(i -> i.getFoodName().equals(foodToSwap))
-                    .findFirst().orElse(null);
-
-            if (itemToReplace == null) {
-                JOptionPane.showMessageDialog(this, "Item not found.", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            String goal = "Reduce Calories"; // Default goal
-            List<String> alternatives = new ca.yorku.eecs3311.foodswap.FoodSwapDAO()
-                    .suggestSwap(itemToReplace.getFoodName(), goal);
-
-            if (alternatives.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "No swap found.", "Info", JOptionPane.INFORMATION_MESSAGE);
-                return;
-            }
-
-            String newFood = alternatives.get(0);
-            boolean ok = dao.updateMealItem(itemToReplace.getId(), newFood, itemToReplace.getQuantity());
-
-            if (ok) {
-                JOptionPane.showMessageDialog(this, "Swap saved! " + foodToSwap + " ➔ " + newFood);
-                loadMealEntries();
-            } else {
-                JOptionPane.showMessageDialog(this, "Swap failed.", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        });
-
         JButton closeBtn = new JButton("Close");
         closeBtn.addActionListener(e -> ((JFrame) SwingUtilities.getWindowAncestor(this)).dispose());
-
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        btnPanel.add(saveSwapBtn);
         btnPanel.add(closeBtn);
         add(btnPanel, BorderLayout.SOUTH);
     }
@@ -131,5 +72,97 @@ public class MealHistoryPanel extends JPanel {
                     "Swap"
             });
         }
+    }
+}
+
+// ButtonRenderer
+class ButtonRenderer extends JButton implements TableCellRenderer {
+    public ButtonRenderer(String label) {
+        setOpaque(true);
+        setText(label);
+    }
+
+    public Component getTableCellRendererComponent(JTable table, Object value,
+        boolean isSelected, boolean hasFocus, int row, int column) {
+        return this;
+    }
+}
+
+// ButtonEditor
+class ButtonEditor extends DefaultCellEditor {
+    private JButton button;
+    private boolean clicked;
+    private final DefaultTableModel model;
+    private final MealEntryDAO dao;
+    private final MealHistoryPanel panel;
+    private final Navigator nav;
+    private final String actionType;
+    private int row;
+
+    public ButtonEditor(JCheckBox checkBox, DefaultTableModel model, MealEntryDAO dao, MealHistoryPanel panel, Navigator nav, String actionType) {
+        super(checkBox);
+        this.model = model;
+        this.dao = dao;
+        this.panel = panel;
+        this.nav = nav;
+        this.actionType = actionType;
+        this.button = new JButton(actionType);
+        this.button.addActionListener(e -> fireEditingStopped());
+    }
+
+    @Override
+    public Component getTableCellEditorComponent(JTable table, Object value,
+        boolean isSelected, int row, int column) {
+        this.row = row;
+        button.setText(actionType);
+        clicked = true;
+        return button;
+    }
+
+    @Override
+    public Object getCellEditorValue() {
+        if (clicked) {
+            int modelRow = row;
+            int mealId = (int) model.getValueAt(modelRow, 0); // ID is hidden but still in model
+
+            if (actionType.equals("Delete")) {
+                int confirm = JOptionPane.showConfirmDialog(button, "Delete this meal?", "Confirm", JOptionPane.YES_NO_OPTION);
+                if (confirm == JOptionPane.YES_OPTION) {
+                    boolean ok = dao.deleteMealEntry(mealId);
+                    if (ok) {
+                        model.removeRow(modelRow);
+                        JOptionPane.showMessageDialog(button, "Meal deleted!");
+                        panel.loadMealEntries();
+                    } else {
+                        JOptionPane.showMessageDialog(button, "Failed to delete meal.");
+                    }
+                }
+            } else if (actionType.equals("Swap")) {
+                List<MealEntry> allMeals = dao.findByProfile(panel.profileName);
+                MealEntry selected = allMeals.stream()
+                        .filter(m -> m.getId() == mealId)
+                        .findFirst().orElse(null);
+
+                if (selected != null && !selected.getItems().isEmpty()) {
+                    MealItem item = selected.getItems().get(0); // prompt user in future
+                    String goal = "Reduce Calories"; // default for now
+                    List<String> swaps = new FoodSwapDAO().suggestSwap(item.getFoodName(), goal);
+                    if (!swaps.isEmpty()) {
+                        String swap = swaps.get(0);
+                        boolean ok = dao.updateMealItem(item.getId(), swap, item.getQuantity());
+                        if (ok) {
+                            JOptionPane.showMessageDialog(button, "Swapped: " + item.getFoodName() + " ➔ " + swap);
+                            panel.loadMealEntries();
+                        }
+                    } else {
+                        JOptionPane.showMessageDialog(button, "No suitable swap found.");
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(button, "No items found in this meal.");
+                }
+            }
+        }
+        clicked = false;
+        return actionType;
     }
 }
