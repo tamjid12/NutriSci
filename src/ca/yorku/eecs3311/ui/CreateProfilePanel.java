@@ -105,7 +105,7 @@ public class CreateProfilePanel extends JPanel {
         // Height
         y++;
         gbc.gridx = 0; gbc.gridy = y;
-        add(new JLabel("Height (" + UnitSystem.METRIC.getHeightUnit() + "):"), gbc);
+        add(new JLabel("Height:"), gbc);
         heightField = new JTextField(8);
         gbc.gridx = 1;
         add(heightField, gbc);
@@ -113,7 +113,7 @@ public class CreateProfilePanel extends JPanel {
         // Weight
         y++;
         gbc.gridx = 0; gbc.gridy = y;
-        add(new JLabel("Weight (" + UnitSystem.METRIC.getWeightUnit() + "):"), gbc);
+        add(new JLabel("Weight:"), gbc);
         weightField = new JTextField(8);
         gbc.gridx = 1;
         add(weightField, gbc);
